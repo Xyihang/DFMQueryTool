@@ -1,0 +1,193 @@
+# 货币资产查询接口
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.0.1
+info:
+  title: ''
+  description: ''
+  version: 1.0.0
+paths:
+  /:
+    post:
+      summary: 货币资产查询接口
+      deprecated: false
+      description: |-
+        货币资产查询接口接口
+        iChartId：319386
+        sIdeToken：zMemOt
+        请求参数需要item和type=3（必须）（type其他参考流水接口）
+        对于ck中的type，QQ为qc；微信为wx
+      tags:
+        - 个人
+      parameters:
+        - name: iChartId
+          in: query
+          description: ''
+          required: false
+          example: '319386'
+          schema:
+            type: string
+        - name: iSubChartId
+          in: query
+          description: ''
+          required: false
+          example: '319386'
+          schema:
+            type: string
+        - name: sIdeToken
+          in: query
+          description: ''
+          required: false
+          example: zMemOt
+          schema:
+            type: string
+        - name: item
+          in: query
+          description: 17020000010-哈夫币、17888808889-三角券、17888808888-三角币
+          required: false
+          example: '17020000010'
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: 1-登陆设备、2-道具流水、3-货币（当item为空时，可显示1和2的流水）
+          required: false
+          example: '3'
+          schema:
+            type: string
+        - name: content-type
+          in: header
+          description: ''
+          required: false
+          example: application/x-www-form-urlencoded;
+          schema:
+            type: string
+        - name: cookie
+          in: header
+          description: ''
+          required: false
+          example:
+            - >-
+              openid=D7AF10F0E80DD74A6844FB54A131C95D; acctype=qc;
+              appid=101491592; access_token=57C57406873816CC7BA6C46708C36150
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ret:
+                    type: integer
+                  iRet:
+                    type: integer
+                  sMsg:
+                    type: string
+                  jData:
+                    type: object
+                    properties:
+                      iRet:
+                        type: string
+                      sMsg:
+                        type: string
+                        description: ok
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            totalMoney:
+                              type: string
+                              description: 数量
+                          x-apifox-orders:
+                            - totalMoney
+                    required:
+                      - iRet
+                      - sMsg
+                      - data
+                    x-apifox-orders:
+                      - iRet
+                      - sMsg
+                      - data
+                  sAmsSerial:
+                    type: string
+                required:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+                x-apifox-orders:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+              example:
+                ret: 0
+                iRet: 0
+                sMsg: ok
+                jData:
+                  iRet: '0'
+                  sMsg: ok
+                  data:
+                    - totalMoney: '3697501'
+                sAmsSerial: AMS-DFM-0621202401-iDxNWG-661959-319386
+          headers: {}
+          x-apifox-name: 成功
+        x-200:ck过期或未登录:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ret:
+                    type: integer
+                  iRet:
+                    type: integer
+                  sMsg:
+                    type: string
+                  sAmsSerial:
+                    type: string
+                required:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - sAmsSerial
+                x-apifox-orders:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - sAmsSerial
+              example:
+                ret: 101
+                iRet: 101
+                sMsg: 非常抱歉，请先登录！
+                sAmsSerial: AMS-DFM-0620182631-mT7gLB-661959-317814
+          headers: {}
+          x-apifox-name: ck过期或未登录
+      security: []
+      x-apifox-folder: 个人
+      x-apifox-status: testing
+      x-run-in-apifox: https://app.apifox.com/web/project/6583340/apis/api-311890070-run
+components:
+  schemas: {}
+  securitySchemes: {}
+servers:
+  - url: http://dev-cn.your-api-server.com
+    description: 开发环境
+  - url: https://comm.ams.game.qq.com/ide/
+    description: 测试环境
+  - url: https://www.wegame.com.cn/api/v1
+    description: 正式环境
+security: []
+
+```

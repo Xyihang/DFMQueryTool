@@ -1,0 +1,1283 @@
+import toga
+from toga.style import Pack
+from toga.style.pack import COLUMN, ROW
+import requests
+import json
+from datetime import datetime, timedelta
+import os
+import configparser
+import webbrowser
+import pyperclip
+
+class DFMQueryApp(toga.App):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config_file = "user_config.ini"
+        self.openid = ""
+        self.access_token = ""
+        self.load_config()
+    
+    def load_config(self):
+        """加载用户配置"""
+        config = configparser.ConfigParser()
+        if os.path.exists(self.config_file):
+            config.read(self.config_file)
+            if config.has_section('User'):
+                self.openid = config.get('User', 'openid', fallback='')
+                self.access_token = config.get('User', 'access_token', fallback='')
+    
+    def save_config(self):
+        """保存用户配置"""
+        config = configparser.ConfigParser()
+        config['User'] = {
+            'openid': self.openid,
+            'access_token': self.access_token
+        }
+        with open(self.config_file, 'w', encoding='utf-8') as configfile:
+            config.write(configfile)
+    
+    def startup(self):
+        # 主窗口
+        self.main_window = toga.MainWindow(title="DFM查询工具", size=(700, 650))
+        
+        # 创建UI组件
+        main_box = toga.Box(style=Pack(direction=COLUMN, margin=8))
+        
+        # 标题
+        title_label = toga.Label(
+            "DFM游戏数据查询工具",
+            style=Pack(font_size=18, font_weight="bold", margin_bottom=15)
+        )
+        
+        # 用户配置区域 - 紧凑布局，支持折叠
+        self.config_box = toga.Box(style=Pack(direction=COLUMN, margin=5, background_color="#f5f5f5"))
+        
+        # 标题、折叠按钮和保存按钮在同一行
+        header_box = toga.Box(style=Pack(direction=ROW, margin_bottom=5))
+        config_label = toga.Label(
+            "用户配置",
+            style=Pack(font_size=14, font_weight="bold")
+        )
+        self.toggle_button = toga.Button(
+            "▲",
+            on_press=self.toggle_config,
+            style=Pack(margin_left=10, padding=(5, 2), background_color="#607D8B", color="white", width=30)
+        )
+        save_button = toga.Button(
+            "保存",
+            on_press=self.save_user_config,
+            style=Pack(margin_left=5, padding=(5, 2), background_color="#2196F3", color="white")
+        )
+        header_box.add(config_label)
+        header_box.add(self.toggle_button)
+        header_box.add(save_button)
+        
+        # 输入框容器 - 使用更紧凑的布局
+        inputs_container = toga.Box(style=Pack(direction=COLUMN))
+        
+        # OpenID输入框
+        openid_box = toga.Box(style=Pack(direction=ROW, margin=2))
+        openid_label = toga.Label("OpenID:", style=Pack(width=70, margin_right=8, font_size=12))
+        self.openid_input = toga.TextInput(
+            placeholder="请输入OpenID",
+            value=self.openid,
+            style=Pack(flex=1, height=30)
+        )
+        openid_box.add(openid_label)
+        openid_box.add(self.openid_input)
+        
+        # Access Token输入框
+        token_box = toga.Box(style=Pack(direction=ROW, margin=2))
+        token_label = toga.Label("Access Token:", style=Pack(width=70, margin_right=8, font_size=12))
+        self.token_input = toga.TextInput(
+            placeholder="请输入Access Token",
+            value=self.access_token,
+            style=Pack(flex=1, height=30)
+        )
+        token_box.add(token_label)
+        token_box.add(self.token_input)
+        
+        inputs_container.add(openid_box)
+        inputs_container.add(token_box)
+        
+        # 用户状态显示 - 更紧凑
+        status_box = toga.Box(style=Pack(direction=ROW, margin_top=5))
+        self.user_info_label = toga.Label(
+            f"用户: {self.openid[:10] + '...' if self.openid and len(self.openid) > 10 else (self.openid if self.openid else '未设置')}",
+            style=Pack(font_size=10, color="gray")
+        )
+        status_box.add(self.user_info_label)
+        
+        # 可折叠的内容容器
+        self.config_content = toga.Box(style=Pack(direction=COLUMN))
+        self.config_content.add(inputs_container)
+        self.config_content.add(status_box)
+        
+        self.config_box.add(header_box)
+        self.config_box.add(self.config_content)
+        
+        # 初始化配置区域可见状态
+        self.config_visible = True
+        
+        # 查询类型选择
+        query_type_box = toga.Box(style=Pack(direction=ROW, margin=5))
+        query_type_label = toga.Label("查询类型:", style=Pack(font_size=14, margin_right=10))
+        
+        # 创建选择框
+        self.query_type = toga.Selection(
+            items=["每日密码", "烽火地带收益Top3", "全面战场数据", "战场周报数据", "烽火周报数据", "特勤处状态", "货币资产查询"],
+            style=Pack(flex=1)
+        )
+        
+        query_type_box.add(query_type_label)
+        query_type_box.add(self.query_type)
+        
+        # 查询按钮容器
+        button_container = toga.Box(style=Pack(direction=ROW, margin=5))
+        
+        # 查询按钮
+        query_button = toga.Button(
+            "查询数据",
+            on_press=self.query_data,
+            style=Pack(flex=1, margin_right=5, background_color="#4CAF50", color="white")
+        )
+        
+        # 帮助按钮
+        help_button = toga.Button(
+            "获取帮助",
+            on_press=self.get_help,
+            style=Pack(flex=1, background_color="#FF9800", color="white")
+        )
+        
+        button_container.add(query_button)
+        button_container.add(help_button)
+        
+        # 结果显示区域
+        result_label = toga.Label("查询结果:", style=Pack(font_size=14, font_weight="bold", margin_top=10))
+        
+        self.result_text = toga.MultilineTextInput(
+            style=Pack(flex=1, margin=5, padding=10),
+            readonly=True,
+            placeholder="选择查询类型并点击查询按钮获取数据..."
+        )
+        
+        # 状态栏
+        self.status_label = toga.Label("就绪", style=Pack(font_size=10, color="gray", margin_top=5))
+        
+        # 组装UI
+        main_box.add(title_label)
+        main_box.add(self.config_box)
+        main_box.add(query_type_box)
+        main_box.add(button_container)
+        main_box.add(result_label)
+        main_box.add(self.result_text)
+        main_box.add(self.status_label)
+        
+        self.main_window.content = main_box
+        self.main_window.show()
+    
+    def toggle_config(self, widget):
+        """切换用户配置区域的显示/隐藏"""
+        try:
+            # 检查当前状态
+            if hasattr(self, 'config_visible') and self.config_visible:
+                # 隐藏配置内容
+                self.config_box.remove(self.config_content)
+                self.toggle_button.text = "▼"
+                self.config_visible = False
+            else:
+                # 显示配置内容
+                self.config_box.add(self.config_content)
+                self.toggle_button.text = "▲"
+                self.config_visible = True
+        except Exception as e:
+            print(f"切换配置区域时出错: {e}")
+    
+    def get_help(self, widget):
+        """获取帮助文档并复制到剪贴板"""
+        try:
+            self.status_label.text = "正在获取帮助文档..."
+            
+            # 获取帮助文档内容
+            help_url = "https://docs.qq.com/document/DS2hWc29pSGVIa3dM"
+            response = requests.get(help_url, timeout=15)
+            
+            if response.status_code == 200:
+                # 尝试获取文档内容
+                try:
+                    # 直接获取文档页面内容
+                    import re
+                    page_content = response.text
+                    
+                    # 尝试提取文档标题和主要内容
+                    title_match = re.search(r'<title[^>]*>([^<]+)</title>', page_content, re.IGNORECASE)
+                    title = title_match.group(1).strip() if title_match else "DFM查询工具帮助文档"
+                    
+                    # 基础帮助信息
+                    help_content = f"{title}\n\n"
+                    help_content += f"文档链接: {help_url}\n\n"
+                    help_content += "=== DFM查询工具使用说明 ===\n\n"
+                    help_content += "1. 用户配置：\n"
+                    help_content += "   - 输入您的OpenID和Access Token\n"
+                    help_content += "   - 点击保存按钮保存配置\n\n"
+                    help_content += "2. 查询功能：\n"
+                    help_content += "   - 选择查询类型\n"
+                    help_content += "   - 点击查询数据获取结果\n\n"
+                    help_content += "3. 支持的查询类型：\n"
+                    help_content += "   - 每日密码：获取当日地图密码\n"
+                    help_content += "   - 烽火地带收益Top3：查看昨日高价值物品\n"
+                    help_content += "   - 全面战场数据：查看MP模式战绩\n"
+                    help_content += "   - 战场周报数据：查看本周MP统计\n"
+                    help_content += "   - 烽火周报数据：查看本周Sol统计\n"
+                    help_content += "   - 特勤处状态：查看特勤处设施状态\n"
+                    help_content += "   - 货币资产查询：查看游戏货币余额\n\n"
+                    help_content += "4. 功能特性：\n"
+                    help_content += "   - 可折叠的用户配置区域\n"
+                    help_content += "   - 自动物品名称识别\n"
+                    help_content += "   - 详细的数据格式化显示\n"
+                    help_content += "   - 错误处理和状态提示\n\n"
+                    help_content += "5. 常见问题：\n"
+                    help_content += "   - 如查询失败，请检查网络连接\n"
+                    help_content += "   - 如显示配置错误，请重新输入凭证\n"
+                    help_content += "   - 可折叠配置区域以获得更大查看空间\n\n"
+                    help_content += f"完整文档请访问：{help_url}"
+                    
+                except Exception as extract_error:
+                    help_content = "DFM查询工具帮助文档\n\n获取详细文档：\n" + help_url + "\n\n此工具用于查询烽火地带游戏数据，支持多种查询类型。如需详细使用说明，请访问上述链接。"
+                
+                # 复制到剪贴板
+                try:
+                    pyperclip.copy(help_content)
+                    self.status_label.text = "帮助文档已复制到剪贴板"
+                    
+                    # 显示简短的提示信息
+                    self.result_text.value = "=== 帮助文档获取成功 ===\n\n✅ 帮助文档已自动复制到剪贴板\n📖 您可以直接粘贴到文本编辑器中查看\n\n🌐 文档链接：\n" + help_url + "\n\n💡 提示：\n• 如果剪贴板内容为空，请手动访问上方链接\n• 文档包含详细的使用说明和常见问题解答"
+                    
+                except Exception as clipboard_error:
+                    # 如果剪贴板操作失败，提供替代方案
+                    self.status_label.text = "剪贴板操作失败，请手动访问"
+                    self.result_text.value = "=== 帮助文档 ===\n\n⚠️ 自动复制到剪贴板失败\n\n🌐 请手动访问文档链接：\n" + help_url + "\n\n📋 您也可以复制下面的链接：\n" + help_url + "\n\n💡 建议将文档链接保存到书签以便快速访问"
+                
+            else:
+                self.status_label.text = "无法访问帮助文档"
+                self.result_text.value = f"=== 获取帮助文档失败 ===\n\n❌ HTTP错误: {response.status_code}\n\n🌐 请手动访问：\n" + help_url + "\n\n💡 可能原因：\n• 网络连接问题\n• 服务器暂时不可用\n• 文档链接已更改"
+                
+        except Exception as e:
+            self.status_label.text = "获取帮助失败"
+            self.result_text.value = f"=== 获取帮助文档时发生错误 ===\n\n🔧 错误信息: {str(e)}\n\n🌐 请手动访问文档链接：\nhttps://docs.qq.com/document/DS2hWc29pSGVIa3dM\n\n💡 建议：\n• 检查网络连接\n• 稍后重试\n• 或者手动访问文档链接"
+    
+    def save_user_config(self, widget):
+        """保存用户配置"""
+        try:
+            self.openid = self.openid_input.value.strip()
+            self.access_token = self.token_input.value.strip()
+            
+            # 验证必填字段
+            if not self.openid:
+                self.result_text.value = "错误: OpenID不能为空"
+                return
+            
+            # 保存配置
+            self.save_config()
+            
+            # 更新用户信息显示
+            self.user_info_label.text = f"用户: {self.openid[:10] + '...' if self.openid and len(self.openid) > 10 else (self.openid if self.openid else '未设置')}"
+            
+            # 显示成功消息
+            self.result_text.value = "配置保存成功！\n\n现在可以使用查询功能了。"
+            self.status_label.text = "配置已保存"
+            
+        except Exception as e:
+            self.result_text.value = f"保存配置时发生错误: {str(e)}"
+            self.status_label.text = "保存失败"
+    
+    def query_data(self, widget):
+        """查询数据"""
+        try:
+            self.status_label.text = "正在查询中..."
+            
+            # 检查配置是否完整
+            if not self.openid:
+                self.result_text.value = "错误: 请先在用户配置区域设置OpenID并保存配置"
+                self.status_label.text = "配置不完整"
+                return
+            
+            # 根据选择类型确定参数
+            query_type = self.query_type.value
+            if query_type == "每日密码":
+                param_value = '{}'
+                query_func = self.query_daily_secret
+            elif query_type == "烽火地带收益Top3":
+                param_value = '{"resourceType":"sol"}'
+                query_func = self.query_sol_data
+            elif query_type == "全面战场数据":
+                param_value = '{"resourceType":"mp"}'
+                query_func = self.query_mp_data
+            elif query_type == "战场周报数据":
+                # 获取当前日期，计算最近一个周日的日期
+                today = datetime.now()
+                # 找到最近的周日（0表示周日，6表示周六）
+                days_since_sunday = today.weekday() + 1  # 0=周一, 6=周日
+                last_sunday = today - timedelta(days=days_since_sunday % 7)
+                stat_date = last_sunday.strftime('%Y%m%d')
+                
+                param_value = f'{{"statDate":"{stat_date}"}}'
+                query_func = self.query_weekly_data
+            elif query_type == "烽火周报数据":
+                # 获取当前日期，计算最近一个周日的日期
+                today = datetime.now()
+                # 找到最近的周日（0表示周日，6表示周六）
+                days_since_sunday = today.weekday() + 1  # 0=周一, 6=周日
+                last_sunday = today - timedelta(days=days_since_sunday % 7)
+                stat_date = last_sunday.strftime('%Y%m%d')
+                
+                param_value = f'{{"statDate":"{stat_date}"}}'
+                query_func = self.query_sol_weekly_data
+            elif query_type == "货币资产查询":
+                param_value = '{}'
+                query_func = self.query_all_currencies
+            else:  # 特勤处状态
+                param_value = '{}'
+                query_func = self.query_special_force_status
+            
+            # 根据查询类型设置不同的API参数
+            if query_type == "每日密码":
+                # 每日密码API配置 - 使用正确的配置，参考a.py
+                url = "https://comm.ams.game.qq.com/ide/"
+                params = {
+                    'iChartId': '316969',
+                    'iSubChartId': '316969',
+                    'sIdeToken': 'NoOapI',
+                    'method': 'dfm/center.day.secret',
+                    'source': '2',
+                    'param': param_value
+                }
+            elif query_type == "战场周报数据":
+                # 战场周报API配置
+                url = "https://comm.ams.game.qq.com/ide/"
+                params = {
+                    'iChartId': '316968',
+                    'iSubChartId': '316968',
+                    'sIdeToken': 'KfXJwH',
+                    'source': '5',
+                    'sArea': '36',
+                    'method': 'dfm/weekly.mp.record',
+                    'param': param_value
+                }
+            elif query_type == "烽火周报数据":
+                # 烽火周报API配置
+                url = "https://comm.ams.game.qq.com/ide/"
+                params = {
+                    'iChartId': '316968',
+                    'iSubChartId': '316968',
+                    'sIdeToken': 'KfXJwH',
+                    'source': '5',
+                    'sArea': '36',
+                    'method': 'dfm/weekly.sol.record',
+                    'param': param_value
+                }
+            elif query_type == "货币资产查询":
+                # 货币资产查询API配置 - 同时查询三种货币类型
+                url = "https://comm.ams.game.qq.com/ide/"
+                params = {
+                    'iChartId': '319386',
+                    'iSubChartId': '319386',
+                    'sIdeToken': 'zMemOt',
+                    'type': '3',
+                    'param': param_value
+                }
+                # 三种货币类型的ID
+                self.currency_items = ['17020000010', '17888808889', '17888808888']  # 哈夫币, 三角券, 三角币
+            elif query_type == "特勤处状态":
+                # 特勤处状态API配置
+                url = "https://comm.ams.game.qq.com/ide/"
+                params = {
+                    'iChartId': '365589',
+                    'iSubChartId': '365589',
+                    'sIdeToken': 'bQaMCQ',
+                    'source': '2',
+                    'param': param_value
+                }
+            else:
+                # 日常数据API配置
+                url = "https://comm.ams.game.qq.com/ide/"
+                params = {
+                    'iChartId': '316969',
+                    'iSubChartId': '316969',
+                    'sIdeToken': 'NoOapI',
+                    'method': 'dfm/center.recent.detail',
+                    'source': '2',
+                    'param': param_value
+                }
+            
+            # 请求头 - 使用保存的配置
+            headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Cookie': f'openid={self.openid}; acctype=qc; appid=101491592; access_token={self.access_token}'
+            }
+            
+            # 发送POST请求
+            response = requests.post(url, params=params, headers=headers, timeout=10)
+            
+            # 打印调试信息
+            print(f"查询类型: {query_type}")
+            print(f"HTTP状态码: {response.status_code}")
+            print(f"响应内容前200字符: {response.text[:200]}")
+            
+            if response.status_code == 200:
+                # 尝试解析JSON
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    # 如果JSON解析失败，显示原始响应
+                    self.result_text.value = f"JSON解析错误: {str(e)}\n\n原始响应:\n{response.text}"
+                    self.status_label.text = "解析错误"
+                    return
+                
+                # 检查返回状态
+                if data.get('ret') == 0 and data.get('iRet') == 0:
+                    jdata = data.get('jData', {})
+                    
+                    # 特殊处理货币资产查询的响应结构
+                    if query_type == "货币资产查询":
+                        # 同时查询三种货币类型
+                        result = self.query_all_currencies(url, params, headers)
+                        self.result_text.value = result
+                        if "查询失败" in result:
+                            self.status_label.text = "查询失败"
+                        else:
+                            self.status_label.text = f"查询成功 - {datetime.now().strftime('%H:%M:%S')}"
+                    else:
+                        # 其他查询的正常处理逻辑
+                        data_content = jdata.get('data', {})
+                        
+                        if data_content.get('code') == 0:
+                            # 调用对应的处理函数
+                            result = query_func(data_content.get('data', {}))
+                            self.result_text.value = result
+                            self.status_label.text = f"查询成功 - {datetime.now().strftime('%H:%M:%S')}"
+                        else:
+                            self.result_text.value = f"API返回错误: {data_content.get('msg', '未知错误')}"
+                            self.status_label.text = "查询失败"
+                else:
+                    self.result_text.value = f"请求失败: {data.get('sMsg', '未知错误')}"
+                    self.status_label.text = "查询失败"
+            else:
+                self.result_text.value = f"HTTP错误: {response.status_code}\n响应内容: {response.text}"
+                self.status_label.text = "网络错误"
+                
+        except Exception as e:
+            self.result_text.value = f"查询过程中发生错误: {str(e)}"
+            self.status_label.text = "错误"
+    
+    def query_sol_data(self, data):
+        """查询烽火地带数据"""
+        sol_detail = data.get('solDetail', {})
+        return self.format_sol_result(sol_detail)
+    
+    def query_mp_data(self, data):
+        """查询全面战场数据"""
+        mp_detail = data.get('mpDetail', {})
+        return self.format_mp_result(mp_detail)
+    
+    def query_weekly_data(self, data):
+        """查询战场周报数据"""
+        return self.format_weekly_result(data)
+    
+    def query_sol_weekly_data(self, data):
+        """查询烽火周报数据"""
+        return self.format_sol_weekly_result(data)
+    
+    def query_daily_secret(self, data):
+        """查询每日密码数据"""
+        return self.format_daily_secret_result(data)
+    
+    def query_special_force_status(self, data):
+        """查询特勤处状态数据"""
+        return self.format_special_force_result(data)
+    
+    def format_sol_result(self, sol_detail):
+        """格式化烽火地带查询结果"""
+        result = []
+        
+        # 基本信息
+        recent_gain = sol_detail.get('recentGain', 0)
+        recent_gain_date = sol_detail.get('recentGainDate', '')
+        current_time = sol_detail.get('currentTime', '')
+        
+        result.append(f"=== 烽火地带昨日收益报告 ===")
+        result.append(f"查询时间: {current_time}")
+        result.append(f"收益日期: {recent_gain_date}")
+        result.append(f"昨日总收益: {recent_gain:,} 金币")
+        result.append("")
+        
+        # Top3物品信息
+        user_collection_top = sol_detail.get('userCollectionTop', {})
+        top_date = user_collection_top.get('date', '')
+        items_list = user_collection_top.get('list', [])
+        
+        result.append(f"收益Top3物品 (统计日期: {top_date}):")
+        result.append("-" * 50)
+        
+        if items_list:
+            for i, item in enumerate(items_list, 1):
+                object_id = item.get('objectID', '未知')
+                count = item.get('count', '0')
+                price = float(item.get('price', '0'))
+                
+                result.append(f"{i}. 物品ID: {object_id}")
+                result.append(f"   带出数量: {count}")
+                result.append(f"   物品价值: {price:,.2f} 金币")
+                result.append("")
+        else:
+            result.append("暂无收益物品数据")
+        
+        return "\n".join(result)
+    
+    def format_mp_result(self, mp_detail):
+        """格式化全面战场查询结果"""
+        result = []
+        
+        # 基本信息
+        total_kill_num = mp_detail.get('totalKillNum', 0)
+        total_win_num = mp_detail.get('totalWinNum', 0)
+        total_fight_num = mp_detail.get('totalFightNum', 0)
+        total_score = mp_detail.get('totalScore', 0)
+        most_use_force_type = mp_detail.get('mostUseForceType', 0)
+        recent_date = mp_detail.get('recentDate', '')
+        current_time = mp_detail.get('currentTime', '')
+        best_match = mp_detail.get('bestMatch', {})
+        
+        # 计算胜率
+        win_rate = (total_win_num / total_fight_num * 100) if total_fight_num > 0 else 0
+        
+        # 计算平均击杀和平均得分
+        avg_kills = total_kill_num / total_fight_num if total_fight_num > 0 else 0
+        avg_score = total_score / total_fight_num if total_fight_num > 0 else 0
+        
+        result.append(f"=== 全面战场昨日战报 ===")
+        result.append(f"查询时间: {current_time}")
+        result.append(f"统计日期: {recent_date}")
+        result.append("")
+        result.append("=== 总体数据 ===")
+        result.append(f"总击杀数: {total_kill_num:,}")
+        result.append(f"总完成对局数: {total_fight_num:,}")
+        result.append(f"获胜对局数: {total_win_num:,}")
+        result.append(f"胜率: {win_rate:.1f}%")
+        result.append(f"总得分: {total_score:,}")
+        result.append(f"平均击杀: {avg_kills:.1f}")
+        result.append(f"平均得分: {avg_score:.1f}")
+        result.append(f"常用干员ID: {most_use_force_type}")
+        result.append("")
+        
+        # 高光对局信息
+        if best_match:
+            assist = best_match.get('assist', 0)
+            death = best_match.get('death', 0)
+            is_winner = best_match.get('isWinner', 0)
+            game_time = best_match.get('gameTime', 0)
+            kill_num = best_match.get('killNum', 0)
+            map_id = best_match.get('mapID', 0)
+            score = best_match.get('score', 0)
+            start_time = best_match.get('startTime', '')
+            dt_event_time = best_match.get('dtEventTime', '')
+            
+            # 转换时间戳为可读格式
+            try:
+                if start_time and start_time.isdigit():
+                    start_time_dt = datetime.fromtimestamp(int(start_time))
+                    start_time_str = start_time_dt.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    start_time_str = start_time
+            except:
+                start_time_str = start_time
+            
+            result.append("=== 高光对局 ===")
+            result.append(f"对局时间: {dt_event_time}")
+            result.append(f"开始时间: {start_time_str}")
+            result.append(f"地图ID: {map_id}")
+            result.append(f"对局结果: {'胜利' if is_winner == 1 else '失败'}")
+            result.append(f"对局时长: {game_time} 秒 ({game_time // 60}分{game_time % 60}秒)")
+            result.append(f"击杀数: {kill_num:,}")
+            result.append(f"援助数: {assist:,}")
+            result.append(f"死亡数: {death:,}")
+            result.append(f"得分: {score:,}")
+            
+            # 计算KDA
+            kda = (kill_num + assist) / death if death > 0 else kill_num + assist
+            result.append(f"KDA: {kda:.2f}")
+            
+            # 计算每分钟数据
+            minutes = game_time / 60 if game_time > 0 else 1
+            kills_per_min = kill_num / minutes
+            score_per_min = score / minutes
+            result.append(f"每分钟击杀: {kills_per_min:.2f}")
+            result.append(f"每分钟得分: {score_per_min:.2f}")
+        else:
+            result.append("暂无高光对局数据")
+        
+        return "\n".join(result)
+    
+    def format_weekly_result(self, data):
+        """格式化战场周报查询结果"""
+        result = []
+        
+        # 检查是否有数据
+        if not data:
+            return "本周暂无战场周报数据"
+        
+        # 获取当前日期，计算统计周期
+        today = datetime.now()
+        days_since_sunday = today.weekday() + 1  # 0=周一, 6=周日
+        last_sunday = today - timedelta(days=days_since_sunday % 7)
+        week_start = last_sunday - timedelta(days=6)  # 周一开始
+        
+        result.append(f"=== 战场周报数据 (统计周期: {week_start.strftime('%Y-%m-%d')} 至 {last_sunday.strftime('%Y-%m-%d')}) ===")
+        result.append("")
+        
+        # 基础统计数据
+        total_num = int(data.get('total_num', 0))
+        win_num = int(data.get('win_num', 0))
+        total_gametime = int(data.get('total_gametime', 0))
+        kill_num = int(data.get('Kill_Num', 0))
+        total_score = int(data.get('total_score', 0))
+        rank_match_score = int(data.get('Rank_Match_Score', 0))
+        
+        # 计算胜率和平均数据
+        win_rate = (win_num / total_num * 100) if total_num > 0 else 0
+        avg_kills = kill_num / total_num if total_num > 0 else 0
+        avg_score = total_score / total_num if total_num > 0 else 0
+        
+        # 游戏时长转换
+        hours = total_gametime // 3600
+        minutes = (total_gametime % 3600) // 60
+        
+        result.append("=== 基础统计 ===")
+        result.append(f"对局场次: {total_num:,}")
+        result.append(f"胜场: {win_num:,}")
+        result.append(f"胜率: {win_rate:.1f}%")
+        result.append(f"总游戏时长: {total_gametime:,}秒 ({hours}小时{minutes}分钟)")
+        result.append(f"总击杀数: {kill_num:,}")
+        result.append(f"平均击杀: {avg_kills:.1f}")
+        result.append(f"总得分: {total_score:,}")
+        result.append(f"平均得分: {avg_score:.1f}")
+        result.append(f"排位分数: {rank_match_score:,}")
+        result.append("")
+        
+        # 战斗数据
+        consume_bullet_num = int(data.get('Consume_Bullet_Num', 0))
+        hit_bullet_num = int(data.get('Hit_Bullet_Num', 0))
+        kill_type1_num = int(data.get('Kill_type1_Num', 0))
+        continuous_kill_num = float(data.get('continuous_Kill_Num', 0))
+        
+        # 计算命中率
+        hit_rate = (hit_bullet_num / consume_bullet_num * 100) if consume_bullet_num > 0 else 0
+        
+        result.append("=== 战斗数据 ===")
+        result.append(f"消耗弹药数: {consume_bullet_num:,}")
+        result.append(f"命中子弹数: {hit_bullet_num:,}")
+        result.append(f"命中率: {hit_rate:.1f}%")
+        result.append(f"载具击杀数: {kill_type1_num:,}")
+        result.append(f"最高连续击杀: {continuous_kill_num:.1f}")
+        result.append("")
+        
+        # 团队数据
+        rescue_teammate_count = int(data.get('Rescue_Teammate_Count', 0))
+        rescue_campmate_count = int(data.get('Rescue_Campmate_Count', 0))
+        by_rescue_num = int(data.get('by_Rescue_num', 0))
+        teammate_reborn_num = int(data.get('Teammate_Reborn_Num', 0))
+        total_occupy = int(data.get('total_Occupy', 0))
+        
+        result.append("=== 团队数据 ===")
+        result.append(f"救援小队队友数: {rescue_teammate_count:,}")
+        result.append(f"救援阵营队友数: {rescue_campmate_count:,}")
+        result.append(f"被救援次数: {by_rescue_num:,}")
+        result.append(f"队友重生次数: {teammate_reborn_num:,}")
+        result.append(f"占点数: {total_occupy:,}")
+        result.append("")
+        
+        # 支援数据
+        sbattle_support_usenum = float(data.get('SBattle_Support_UseNum', 0))
+        sbattle_support_costscore = float(data.get('SBattle_Support_CostScore', 0))
+        
+        result.append("=== 支援数据 ===")
+        result.append(f"局内支援呼叫次数: {sbattle_support_usenum:.1f}")
+        result.append(f"支援消耗分数: {sbattle_support_costscore:,.0f}")
+        result.append("")
+        
+        # 干员数据
+        deploy_armed_force_type = data.get('max_inum_DeployArmedForceType', '0')
+        deploy_kill_num = int(data.get('DeployArmedForceType_KillNum', 0))
+        deploy_gametime = int(data.get('DeployArmedForceType_gametime', 0))
+        deploy_inum = int(data.get('DeployArmedForceType_inum', 0))
+        
+        # 地图数据解析
+        map_info = data.get('max_inum_mapid', '')
+        map_data = []
+        if map_info and map_info.startswith('{'):
+            try:
+                # 解析地图数据格式: {'MapId':303,'inum':1}#{'MapId':107,'inum':1}...
+                map_entries = map_info.split('#')
+                for entry in map_entries:
+                    if entry.startswith('{') and entry.endswith('}'):
+                        # 简单解析，提取地图ID和场次
+                        parts = entry.strip('{}').split(',')
+                        map_id = parts[0].split(':')[1] if len(parts) > 0 else '未知'
+                        inum = parts[1].split(':')[1] if len(parts) > 1 else '0'
+                        map_data.append((map_id, int(inum)))
+            except:
+                pass
+        
+        result.append("=== 干员数据 ===")
+        result.append(f"本命干员ID: {deploy_armed_force_type}")
+        result.append(f"本命干员击杀数: {deploy_kill_num:,}")
+        result.append(f"本命干员游戏时长: {deploy_gametime:,}秒")
+        result.append(f"本命干员完成对局: {deploy_inum:,}")
+        result.append("")
+        
+        if map_data:
+            result.append("=== 地图分布 ===")
+            for map_id, inum in sorted(map_data, key=lambda x: x[1], reverse=True)[:5]:  # 显示前5个地图
+                result.append(f"地图ID {map_id}: {inum}场")
+        
+        return "\n".join(result)
+    
+    def format_sol_weekly_result(self, data):
+        """格式化烽火周报查询结果"""
+        result = []
+        
+        # 检查是否有数据
+        if not data:
+            return "本周暂无烽火周报数据"
+        
+        # 获取当前日期，计算统计周期
+        today = datetime.now()
+        days_since_sunday = today.weekday() + 1  # 0=周一, 6=周日
+        last_sunday = today - timedelta(days=days_since_sunday % 7)
+        week_start = last_sunday - timedelta(days=6)  # 周一开始
+        
+        result.append(f"=== 烽火周报数据 (统计周期: {week_start.strftime('%Y-%m-%d')} 至 {last_sunday.strftime('%Y-%m-%d')}) ===")
+        result.append("")
+        
+        # 基础统计数据
+        total_sol_num = int(data.get('total_sol_num', 0))
+        total_exacuation_num = int(data.get('total_exacuation_num', 0))
+        total_Quest_num = int(data.get('total_Quest_num', 0))
+        total_Online_Time = int(data.get('total_Online_Time', 0))
+        
+        # 计算撤离率和平均在线时长
+        evacuation_rate = (total_exacuation_num / total_sol_num * 100) if total_sol_num > 0 else 0
+        avg_online_time = total_Online_Time / total_sol_num if total_sol_num > 0 else 0
+        
+        # 在线时长转换
+        hours = total_Online_Time // 3600
+        minutes = (total_Online_Time % 3600) // 60
+        
+        result.append("=== 基础统计 ===")
+        result.append(f"本周对局数: {total_sol_num:,}")
+        result.append(f"撤离成功数: {total_exacuation_num:,}")
+        result.append(f"撤离率: {evacuation_rate:.1f}%")
+        result.append(f"完成任务数: {total_Quest_num:,}")
+        result.append(f"总在线时长: {total_Online_Time:,}秒 ({hours}小时{minutes}分钟)")
+        result.append(f"平均在线时长: {avg_online_time:.1f}秒")
+        result.append("")
+        
+        # 经济数据
+        gained_price = int(data.get('Gained_Price', 0))
+        consume_price = int(data.get('consume_Price', 0))
+        rise_price = int(data.get('rise_Price', 0))
+        total_price = data.get('Total_Price', '')
+        
+        # 计算平均收益和利润率
+        avg_gain = gained_price / total_sol_num if total_sol_num > 0 else 0
+        profit_margin = (rise_price / consume_price * 100) if consume_price > 0 else 0
+        
+        result.append("=== 经济数据 ===")
+        result.append(f"本周总带出哈夫币: {gained_price:,}")
+        result.append(f"本周总带入哈夫币: {consume_price:,}")
+        result.append(f"本周总利润: {rise_price:,}")
+        result.append(f"平均每局收益: {avg_gain:,.0f}")
+        result.append(f"利润率: {profit_margin:.1f}%")
+        result.append("")
+        
+        # 解析每日仓库价值
+        if total_price:
+            try:
+                price_entries = total_price.split(',')
+                result.append("=== 每日仓库价值 ===")
+                for entry in price_entries:
+                    if '-' in entry:
+                        parts = entry.split('-')
+                        if len(parts) >= 3:
+                            day = parts[0]
+                            date = parts[1]
+                            value = parts[2]
+                            result.append(f"{day} ({date}): {int(value):,}")
+            except:
+                pass
+            result.append("")
+        
+        # 击杀数据
+        total_kill_count = int(data.get('total_Kill_Count', 0))
+        total_kill_player = int(data.get('total_Kill_Player', 0))
+        total_kill_ai = int(data.get('total_Kill_AI', 0))
+        total_kill_boss = int(data.get('total_Kill_Boss', 0))
+        total_death_count = int(data.get('total_Death_Count', 0))
+        total_rescue_num = int(data.get('total_Rescue_num', 0))
+        
+        # 计算KD比和生存率
+        kd_ratio = total_kill_count / total_death_count if total_death_count > 0 else total_kill_count
+        survival_rate = ((total_sol_num - total_death_count) / total_sol_num * 100) if total_sol_num > 0 else 0
+        
+        result.append("=== 战斗数据 ===")
+        result.append(f"总击杀数: {total_kill_count:,}")
+        result.append(f"击败干员数: {total_kill_player:,}")
+        result.append(f"击杀AI数: {total_kill_ai:,}")
+        result.append(f"击杀BOSS数: {total_kill_boss:,}")
+        result.append(f"死亡次数: {total_death_count:,}")
+        result.append(f"KD比: {kd_ratio:.2f}")
+        result.append(f"生存率: {survival_rate:.1f}%")
+        result.append(f"救援次数: {total_rescue_num:,}")
+        result.append("")
+        
+        # 特殊数据
+        gained_price_overmillion_num = int(data.get('GainedPrice_overmillion_num', 0))
+        teammate_price_overzero_num = int(data.get('TeammatePrice_overzero_num', 0))
+        kill_by_crocodile_num = int(data.get('Kill_ByCrocodile_num', 0))
+        search_birdsnest_num = int(data.get('search_Birdsnest_num', 0))
+        mandel_brick_num = int(data.get('Mandel_brick_num', 0))
+        use_keycard_num = int(data.get('use_Keycard_num', 0))
+        total_mileage = int(data.get('Total_Mileage', 0))
+        rank_score = int(data.get('Rank_Score', 0))
+        
+        result.append("=== 特殊数据 ===")
+        result.append(f"百万撤离场次: {gained_price_overmillion_num:,}")
+        result.append(f"队友价格为正次数: {teammate_price_overzero_num:,}")
+        result.append(f"被鳄鱼杀死次数: {kill_by_crocodile_num:,}")
+        result.append(f"搜索鸟巢数: {search_birdsnest_num:,}")
+        result.append(f"曼德尔砖破译数: {mandel_brick_num:,}")
+        result.append(f"消耗钥匙数: {use_keycard_num:,}")
+        result.append(f"总里程: {total_mileage:,}米")
+        result.append(f"排位分数: {rank_score:,}")
+        result.append("")
+        
+        # 干员使用数据解析
+        armed_force_info = data.get('total_ArmedForceId_num', '')
+        armed_force_data = []
+        if armed_force_info and armed_force_info.startswith('{'):
+            try:
+                # 解析干员数据格式: {'ArmedForceId':40005,'inum':2}#{'ArmedForceId':20004,'inum':10}...
+                entries = armed_force_info.split('#')
+                for entry in entries:
+                    if entry.startswith('{') and entry.endswith('}'):
+                        parts = entry.strip('{}').split(',')
+                        force_id = parts[0].split(':')[1] if len(parts) > 0 else '未知'
+                        inum = parts[1].split(':')[1] if len(parts) > 1 else '0'
+                        armed_force_data.append((force_id, int(inum)))
+            except:
+                pass
+        
+        # 干员ID映射
+        force_map = {
+            '10007': '红狼', '10010': '威龙', '10011': '无名',
+            '20003': '蜂医', '20004': '蛊', '30008': '牧羊人',
+            '30011': '比特', '40005': '露娜', '40010': '骇爪', '10012': '疾风'
+        }
+        
+        if armed_force_data:
+            result.append("=== 干员使用情况 ===")
+            for force_id, inum in sorted(armed_force_data, key=lambda x: x[1], reverse=True):
+                force_name = force_map.get(force_id, f'干员{force_id}')
+                result.append(f"{force_name} (ID:{force_id}): {inum}场")
+            result.append("")
+        
+        # 地图数据解析
+        map_info = data.get('total_mapid_num', '')
+        map_data = []
+        if map_info and map_info.startswith('{'):
+            try:
+                # 解析地图数据格式: {'MapId':2202,'inum':6}#{'MapId':1901,'inum':5}...
+                map_entries = map_info.split('#')
+                for entry in map_entries:
+                    if entry.startswith('{') and entry.endswith('}'):
+                        parts = entry.strip('{}').split(',')
+                        map_id = parts[0].split(':')[1] if len(parts) > 0 else '未知'
+                        inum = parts[1].split(':')[1] if len(parts) > 1 else '0'
+                        map_data.append((map_id, int(inum)))
+            except:
+                pass
+        
+        if map_data:
+            result.append("=== 地图分布 ===")
+            for map_id, inum in sorted(map_data, key=lambda x: x[1], reverse=True)[:5]:  # 显示前5个地图
+                result.append(f"地图ID {map_id}: {inum}场")
+            result.append("")
+        
+        # 高价值物品列表
+        carry_out_highprice_list = data.get('CarryOut_highprice_list', '')
+        if carry_out_highprice_list and len(carry_out_highprice_list) > 10:
+            try:
+                # 解析高价值物品格式: {'itemid':13120000256,'inum':1,'auctontype':配件,'quality':5.0,'iPrice':25534.0}...
+                items = carry_out_highprice_list.split('#')
+                if items:
+                    result.append("=== 本周带出高价值物品 (前10个) ===")
+                    for i, item in enumerate(items[:10], 1):
+                        if item.startswith('{') and item.endswith('}'):
+                            # 简单解析显示物品ID和价值
+                            parts = item.strip('{}').split(',')
+                            item_id = ''
+                            price = ''
+                            for part in parts:
+                                if 'itemid:' in part:
+                                    item_id = part.split(':')[1]
+                                elif 'iPrice:' in part:
+                                    price = part.split(':')[1]
+                            if item_id and price:
+                                result.append(f"{i}. 物品ID: {item_id}, 价值: {float(price):,.0f}")
+                    result.append("")
+            except:
+                pass
+        
+        return "\n".join(result)
+    
+    def format_daily_secret_result(self, data):
+        """格式化每日密码查询结果"""
+        result = []
+        
+        # 检查是否有数据
+        if not data:
+            return "暂无每日密码数据"
+        
+        # 当前时间
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        result.append(f"=== 每日密码查询报告 ===")
+        result.append(f"查询时间: {current_time}")
+        result.append("")
+        
+        # 获取密码列表
+        secret_list = data.get('list', [])
+        
+        if secret_list:
+            result.append("=== 今日地图密码 ===")
+            result.append("-" * 40)
+            
+            # 地图ID到名称的映射
+            map_names = {
+                1: "零号大坝",
+                2: "长弓溪谷", 
+                3: "巴克什",
+                4: "航天基地",
+                5: "潮汐监狱"
+            }
+            
+            for secret_info in secret_list:
+                map_id = secret_info.get('mapID', 0)
+                map_name = map_names.get(map_id, f"未知地图({map_id})")
+                secret = secret_info.get('secret', '未知')
+                
+                result.append(f"【{map_name}】")
+                result.append(f"地图ID: {map_id}")
+                result.append(f"今日密码: {secret}")
+                result.append("")
+            
+            # 添加使用说明
+            result.append("=== 使用说明 ===")
+            result.append("-" * 40)
+            result.append("• 密码可用于进入对应地图的特殊区域")
+            result.append("• 每日密码会在服务器时间00:00刷新")
+            result.append("• 不同地图的密码可能不同")
+            result.append("• 请妥善保管密码，避免泄露")
+            result.append("")
+            
+            # 添加提示信息
+            result.append("💡 提示: 点击密码区域可以复制密码内容")
+        else:
+            result.append("今日暂无地图密码信息")
+            result.append("")
+            result.append("可能原因:")
+            result.append("- 服务器维护中")
+            result.append("- 密码尚未刷新")
+            result.append("- 网络连接问题")
+        
+        return "\n".join(result)
+    
+    def format_special_force_result(self, data):
+        """格式化特勤处状态查询结果"""
+        result = []
+        
+        # 检查是否有数据
+        if not data:
+            return "暂无特勤处状态数据"
+        
+        # 当前时间
+        now_time = data.get('nowTime', 0)
+        current_time_str = datetime.fromtimestamp(now_time).strftime('%Y-%m-%d %H:%M:%S') if now_time > 0 else "未知"
+        
+        result.append(f"=== 特勤处状态报告 ===")
+        result.append(f"查询时间: {current_time_str}")
+        result.append("")
+        
+        # 特勤处设施数据
+        place_data = data.get('placeData', [])
+        
+        if place_data:
+            result.append("=== 设施状态 ===")
+            
+            # 按设施类型分类显示
+            facilities_by_type = {}
+            for facility in place_data:
+                place_type = facility.get('placeType', '未知')
+                if place_type not in facilities_by_type:
+                    facilities_by_type[place_type] = []
+                facilities_by_type[place_type].append(facility)
+            
+            # 显示每个设施的状态
+            for facility in place_data:
+                facility_id = facility.get('Id', '未知')
+                facility_name = facility.get('placeName', '未知设施')
+                status = facility.get('Status', '未知')
+                level = facility.get('Level', '0')
+                
+                result.append(f"【{facility_name} (ID:{facility_id})】")
+                result.append(f"等级: {level}级")
+                result.append(f"状态: {status}")
+                
+                # 如果设施正在生产，显示详细信息
+                left_time = facility.get('leftTime', 0)
+                push_time = facility.get('pushTime', 0)
+                object_id = facility.get('objectId', 0)
+                
+                if left_time > 0 and push_time > 0:
+                    # 计算剩余时间
+                    hours = left_time // 3600
+                    minutes = (left_time % 3600) // 60
+                    seconds = left_time % 60
+                    
+                    # 生产开始时间
+                    start_time_str = datetime.fromtimestamp(push_time).strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    result.append(f"生产物品ID: {object_id}")
+                    result.append(f"开始生产时间: {start_time_str}")
+                    result.append(f"剩余时间: {hours}小时{minutes}分钟{seconds}秒")
+                
+                result.append("")
+        else:
+            result.append("暂无设施数据")
+            result.append("")
+        
+        # 物品映射表信息
+        relate_map = data.get('relateMap', {})
+        if relate_map:
+            # 查找正在生产的物品信息
+            producing_items = []
+            for facility in place_data:
+                object_id = facility.get('objectId', 0)
+                if object_id > 0 and str(object_id) in relate_map:
+                    producing_items.append((facility, relate_map[str(object_id)]))
+            
+            if producing_items:
+                result.append("=== 正在生产的物品 ===")
+                for facility, item_info in producing_items:
+                    object_name = item_info.get('objectName', '未知物品')
+                    grade = item_info.get('grade', 0)
+                    avg_price = item_info.get('avgPrice', 0)
+                    
+                    result.append(f"物品名称: {object_name}")
+                    result.append(f"物品等级: {grade}级")
+                    result.append(f"平均价格: {avg_price:,} 金币")
+                    
+                    # 显示物品详细信息
+                    if item_info.get('primaryClass') == 'acc':
+                        acc_detail = item_info.get('accDetail', {})
+                        if acc_detail:
+                            control_speed = acc_detail.get('controlSpeed', 0)
+                            result.append(f"操控速度: {control_speed}")
+                    elif item_info.get('primaryClass') == 'props':
+                        props_detail = item_info.get('propsDetail', {})
+                        if props_detail:
+                            active_time = props_detail.get('activeTime', '未知')
+                            result.append(f"持续时间: {active_time}秒")
+                    
+                    result.append("")
+        
+        # 小程序记录
+        applet_record = data.get('appletRecord', [])
+        if applet_record:
+            result.append("=== 小程序记录 ===")
+            for record in applet_record:
+                result.append(f"- {record}")
+            result.append("")
+        
+        return "\n".join(result)
+    
+    def query_all_currencies(self, url, params, headers):
+        """同时查询三种货币类型"""
+        result = []
+        
+        # 当前时间
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        result.append(f"=== 货币资产查询报告 ===")
+        result.append(f"查询时间: {current_time}")
+        result.append("")
+        
+        # 三种货币类型的ID
+        currency_items = [
+            ('17020000010', '哈夫币'),
+            ('17888808889', '三角券'),
+            ('17888808888', '三角币')
+        ]
+        
+        total_assets = 0
+        
+        for item_id, currency_name in currency_items:
+            try:
+                # 修改参数中的item
+                query_params = params.copy()
+                query_params['item'] = item_id
+                
+                # 发送POST请求
+                response = requests.post(url, params=query_params, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if data.get('ret') == 0 and data.get('iRet') == 0:
+                        jdata = data.get('jData', {})
+                        data_content = jdata.get('data', [])
+                        
+                        if isinstance(data_content, list) and len(data_content) > 0:
+                            currency_data = data_content[0]
+                            total_money = currency_data.get('totalMoney', '0')
+                            money_amount = int(total_money)
+                            total_assets += money_amount
+                            
+                            result.append(f"=== {currency_name} ===")
+                            result.append(f"数量: {money_amount:,}")
+                            
+                            # 添加资产状态评估
+                            if money_amount > 1000000:
+                                result.append("💰 资产状态: 富有")
+                            elif money_amount > 500000:
+                                result.append("💵 资产状态: 小康")
+                            elif money_amount > 100000:
+                                result.append("💸 资产状态: 一般")
+                            else:
+                                result.append("💳 资产状态: 需要积累")
+                            result.append("")
+                        else:
+                            result.append(f"{currency_name}: 数据格式异常")
+                            result.append("")
+                    else:
+                        result.append(f"{currency_name}: 查询失败 - {data.get('sMsg', '未知错误')}")
+                        result.append("")
+                else:
+                    result.append(f"{currency_name}: HTTP错误 - {response.status_code}")
+                    result.append("")
+            except Exception as e:
+                result.append(f"{currency_name}: 查询错误 - {str(e)}")
+                result.append("")
+        
+        # 显示总资产
+        result.append("=== 总资产统计 ===")
+        result.append(f"三种货币总价值: {total_assets:,} 哈夫币")
+        result.append("")
+        
+        # 添加资产状态评估
+        if total_assets > 30000000:
+            result.append("💰 总体资产状态: 非常富有")
+        elif total_assets > 150:
+            result.append("💵 总体资产状态: 富有")
+        elif total_assets > 50:
+            result.append("💸 总体资产状态: 小康")
+        else:
+            result.append("💳 总体资产状态: 需要积累")
+        
+        return "\n".join(result)
+    
+    def query_currency_assets(self, data):
+        """查询货币资产数据"""
+        return self.format_currency_assets_result(data)
+    
+    def format_currency_assets_result(self, data):
+        """格式化货币资产查询结果"""
+        result = []
+        
+        # 检查是否有数据
+        if not data:
+            return "暂无货币资产数据"
+        
+        # 当前时间
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        result.append(f"=== 货币资产查询报告 ===")
+        result.append(f"查询时间: {current_time}")
+        result.append("")
+        
+        # 货币资产数据 - 直接处理数据对象
+        if isinstance(data, dict):
+            # 如果是字典类型，直接获取totalMoney字段
+            total_money = data.get('totalMoney', '0')
+            
+            result.append("=== 哈夫币资产 ===")
+            result.append(f"哈夫币数量: {int(total_money):,}")
+            result.append("")
+            
+            # 根据API文档，item参数为17020000010代表哈夫币
+            # 可以扩展支持其他货币类型
+            result.append("货币类型说明:")
+            result.append("- 哈夫币: 17020000010")
+            result.append("- 三角券: 17888808889")
+            result.append("- 三角币: 17888808888")
+            result.append("")
+            
+            # 添加资产状态评估
+            money_amount = int(total_money)
+            if money_amount > 1000000:
+                result.append("💰 资产状态: 富有")
+            elif money_amount > 500000:
+                result.append("💵 资产状态: 小康")
+            elif money_amount > 100000:
+                result.append("💸 资产状态: 一般")
+            else:
+                result.append("💳 资产状态: 需要积累")
+        elif isinstance(data, list) and len(data) > 0:
+            # 如果是列表类型，遍历处理每个元素
+            for currency_data in data:
+                if isinstance(currency_data, dict):
+                    total_money = currency_data.get('totalMoney', '0')
+                    
+                    result.append("=== 哈夫币资产 ===")
+                    result.append(f"哈夫币数量: {int(total_money):,}")
+                    result.append("")
+                    
+                    # 添加资产状态评估
+                    money_amount = int(total_money)
+                    if money_amount > 1000000:
+                        result.append("💰 资产状态: 富有")
+                    elif money_amount > 500000:
+                        result.append("💵 资产状态: 小康")
+                    elif money_amount > 100000:
+                        result.append("💸 资产状态: 一般")
+                    else:
+                        result.append("💳 资产状态: 需要积累")
+                    result.append("")
+        else:
+            result.append("数据格式异常，无法解析货币资产信息")
+        
+        result.append("支持的货币类型:")
+        result.append("- 哈夫币: 17020000010")
+        result.append("- 三角券: 17888808889")
+        result.append("- 三角币: 17888808888")
+        result.append("")
+        result.append("注: 当前查询为哈夫币资产，如需查询其他货币请修改item参数")
+        
+        return "\n".join(result)
+
+def main():
+    return DFMQueryApp("烽火地带查询工具", "com.dfm.query")
+
+if __name__ == "__main__":
+    app = main()
+    app.main_loop()

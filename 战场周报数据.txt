@@ -1,0 +1,354 @@
+# 战场周报数据
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.0.1
+info:
+  title: ''
+  description: ''
+  version: 1.0.0
+paths:
+  /ide/:
+    post:
+      summary: 战场周报数据
+      deprecated: false
+      description: |-
+        战场周报接口
+        iChartId：316968
+        sIdeToken：KfXJwH
+        method：dfm/weekly.sol.record
+        statDate=周末的日期（20250622）
+        source为5
+        请求方式为请求体raw格式，可使用参数串化或者请求参数转移变为params来请求
+        对于ck中的type，QQ为qc；微信为wx
+      tags:
+        - 个人
+      parameters:
+        - name: iChartId
+          in: query
+          description: ''
+          required: false
+          example: '316968'
+          schema:
+            type: string
+        - name: iSubChartId
+          in: query
+          description: ''
+          required: false
+          example: '316968'
+          schema:
+            type: string
+        - name: sIdeToken
+          in: query
+          description: ''
+          required: false
+          example: KfXJwH
+          schema:
+            type: string
+        - name: source
+          in: query
+          description: ''
+          required: false
+          example: '5'
+          schema:
+            type: string
+        - name: sArea
+          in: query
+          description: ''
+          required: false
+          example: '36'
+          schema:
+            type: string
+        - name: method
+          in: query
+          description: ''
+          required: false
+          example: dfm/weekly.mp.record
+          schema:
+            type: string
+        - name: statDate
+          in: query
+          description: ''
+          required: false
+          example: '20250706'
+          schema:
+            type: string
+        - name: param
+          in: query
+          description: ''
+          required: false
+          example: '{"source":"5","method":"dfm/weekly.mp.record","statDate":"20250706"}'
+          schema:
+            type: string
+        - name: content-type
+          in: header
+          description: ''
+          required: false
+          example: ' application/x-www-form-urlencoded;'
+          schema:
+            type: string
+        - name: cookie
+          in: header
+          description: ''
+          required: false
+          example:
+            - >-
+              openid=C2DE7D79A3A9F934EE08F95B747E054E; acctype=qc;
+              appid=101491592; access_token=0569052625742711AC6EB6737713D906
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ret:
+                    type: integer
+                  iRet:
+                    type: integer
+                  sMsg:
+                    type: string
+                  jData:
+                    type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          code:
+                            type: integer
+                          data:
+                            type: object
+                            properties:
+                              Consume_Bullet_Num:
+                                type: string
+                                description: 总消耗弹药数
+                              DeployArmedForceType_KillNum:
+                                type: string
+                                description: 本命干员完成击杀
+                              DeployArmedForceType_gametime:
+                                type: string
+                                description: 本命干员游戏时长
+                              DeployArmedForceType_inum:
+                                type: string
+                                description: 本命干员完成对局
+                              Hit_Bullet_Num:
+                                type: string
+                                description: 总命中子弹数
+                              Kill_Num:
+                                type: string
+                                description: 总击杀数
+                              Kill_type1_Num:
+                                type: string
+                                description: 载具击杀数量
+                              Rank_Match_Score:
+                                type: string
+                                description: 排位分
+                              Rescue_Campmate_Count:
+                                type: string
+                                description: 救援阵营队友数
+                              Rescue_Teammate_Count:
+                                type: string
+                                description: 救援小队队友数
+                              SBattle_Support_CostScore:
+                                type: string
+                                description: 局内支援呼叫消耗分数
+                              SBattle_Support_UseNum:
+                                type: string
+                                description: 局内支援呼叫
+                              Teammate_Reborn_Num:
+                                type: string
+                                description: 队友重生次数
+                              Used_Time:
+                                type: string
+                                description: 使用次数（未知）
+                              by_Rescue_num:
+                                type: string
+                                description: 被救援次数
+                              continuous_Kill_Num:
+                                type: string
+                                description: 最高连续击杀
+                              max_inum_DeployArmedForceType:
+                                type: string
+                                description: 本命干员ID
+                              max_inum_mapid:
+                                type: string
+                                description: 地图信息
+                              total_Occupy:
+                                type: string
+                                description: 占点数
+                              total_gametime:
+                                type: string
+                                description: 总游戏时长
+                              total_num:
+                                type: string
+                                description: 对局场次
+                              total_score:
+                                type: string
+                                description: 总得分
+                              win_num:
+                                type: string
+                                description: 胜场
+                            required:
+                              - Consume_Bullet_Num
+                              - DeployArmedForceType_KillNum
+                              - DeployArmedForceType_gametime
+                              - DeployArmedForceType_inum
+                              - Hit_Bullet_Num
+                              - Kill_Num
+                              - Kill_type1_Num
+                              - Rank_Match_Score
+                              - Rescue_Campmate_Count
+                              - Rescue_Teammate_Count
+                              - SBattle_Support_CostScore
+                              - SBattle_Support_UseNum
+                              - Teammate_Reborn_Num
+                              - Used_Time
+                              - by_Rescue_num
+                              - continuous_Kill_Num
+                              - max_inum_DeployArmedForceType
+                              - max_inum_mapid
+                              - total_Occupy
+                              - total_gametime
+                              - total_num
+                              - total_score
+                              - win_num
+                            x-apifox-orders:
+                              - Consume_Bullet_Num
+                              - DeployArmedForceType_KillNum
+                              - DeployArmedForceType_gametime
+                              - DeployArmedForceType_inum
+                              - Hit_Bullet_Num
+                              - Kill_Num
+                              - Kill_type1_Num
+                              - Rank_Match_Score
+                              - Rescue_Campmate_Count
+                              - Rescue_Teammate_Count
+                              - SBattle_Support_CostScore
+                              - SBattle_Support_UseNum
+                              - Teammate_Reborn_Num
+                              - Used_Time
+                              - by_Rescue_num
+                              - continuous_Kill_Num
+                              - max_inum_DeployArmedForceType
+                              - max_inum_mapid
+                              - total_Occupy
+                              - total_gametime
+                              - total_num
+                              - total_score
+                              - win_num
+                          message:
+                            type: string
+                        required:
+                          - code
+                          - data
+                          - message
+                        x-apifox-orders:
+                          - code
+                          - data
+                          - message
+                    required:
+                      - data
+                    x-apifox-orders:
+                      - data
+                  sAmsSerial:
+                    type: string
+                required:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+                x-apifox-orders:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+              examples:
+                '1':
+                  summary: 成功获取
+                  value:
+                    ret: 0
+                    iRet: 0
+                    sMsg: succ
+                    jData:
+                      data:
+                        code: 0
+                        data:
+                          Consume_Bullet_Num: '3016'
+                          DeployArmedForceType_KillNum: '347'
+                          DeployArmedForceType_gametime: '7768'
+                          DeployArmedForceType_inum: '7'
+                          Hit_Bullet_Num: '1189'
+                          Kill_Num: '347'
+                          Kill_type1_Num: '1'
+                          Rank_Match_Score: '1174'
+                          Rescue_Campmate_Count: '9'
+                          Rescue_Teammate_Count: '4'
+                          SBattle_Support_CostScore: '81000.0'
+                          SBattle_Support_UseNum: '6.0'
+                          Teammate_Reborn_Num: '3'
+                          Used_Time: '87'
+                          by_Rescue_num: '31'
+                          continuous_Kill_Num: '4.0'
+                          max_inum_DeployArmedForceType: '10010'
+                          max_inum_mapid: >-
+                            {'MapId':303,'inum':1}#{'MapId':107,'inum':1}#{'MapId':54,'inum':1}#{'MapId':103,'inum':1}#{'MapId':302,'inum':1}#{'MapId':75,'inum':1}#{'MapId':108,'inum':1}
+                          total_Occupy: '11'
+                          total_gametime: '7768'
+                          total_num: '7'
+                          total_score: '132217'
+                          win_num: '5'
+                        message: ok
+                    sAmsSerial: AMS-DFM-0708220753-o3ELXa-661959-316968
+                '2':
+                  summary: 空白数据
+                  value:
+                    ret: 0
+                    iRet: 0
+                    sMsg: succ
+                    jData:
+                      data:
+                        code: 0
+                        data: []
+                        message: ok
+                    sAmsSerial: AMS-DFM-0626161317-jPDTml-661959-316968
+          headers: {}
+          x-apifox-name: 成功
+        x-200:ck过期或未登录:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+              example:
+                ret: 101
+                iRet: 101
+                sMsg: 非常抱歉，请先登录！
+                sAmsSerial: AMS-DFM-0626161256-FKiWaE-661959-316968
+          headers: {}
+          x-apifox-name: ck过期或未登录
+      security: []
+      x-apifox-folder: 个人
+      x-apifox-status: testing
+      x-run-in-apifox: https://app.apifox.com/web/project/6583340/apis/api-319366047-run
+components:
+  schemas: {}
+  securitySchemes: {}
+servers:
+  - url: http://dev-cn.your-api-server.com
+    description: 开发环境
+  - url: https://comm.ams.game.qq.com/ide/
+    description: 测试环境
+  - url: https://www.wegame.com.cn/api/v1
+    description: 正式环境
+security: []
+
+```

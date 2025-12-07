@@ -1,0 +1,724 @@
+# 特勤处状态
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.0.1
+info:
+  title: ''
+  description: ''
+  version: 1.0.0
+paths:
+  /:
+    post:
+      summary: 特勤处状态
+      deprecated: false
+      description: |-
+        特勤处状态接口
+        iChartId：365589
+        sIdeToken：bQaMCQ
+        请求参数需要source=2（必须）
+        对于ck中的type，QQ为qc；微信为wx
+      tags:
+        - 个人
+      parameters:
+        - name: iChartId
+          in: query
+          description: ''
+          required: false
+          example: '365589'
+          schema:
+            type: string
+        - name: iSubChartId
+          in: query
+          description: ''
+          required: false
+          example: '365589'
+          schema:
+            type: string
+        - name: sIdeToken
+          in: query
+          description: ''
+          required: false
+          example: bQaMCQ
+          schema:
+            type: string
+        - name: source
+          in: query
+          description: ''
+          required: false
+          example: '2'
+          schema:
+            type: string
+        - name: content-type
+          in: header
+          description: ''
+          required: false
+          example: application/x-www-form-urlencoded;
+          schema:
+            type: string
+        - name: cookie
+          in: header
+          description: ''
+          required: false
+          example:
+            - >-
+              openid=D7AF10F0E80DD74A6844FB54A131C95D; acctype=qc;
+              appid=101491592; access_token=57C57406873816CC7BA6C46708C36150
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ret:
+                    type: integer
+                  iRet:
+                    type: integer
+                  sMsg:
+                    type: string
+                    description: succ
+                  jData:
+                    type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          code:
+                            type: integer
+                          data:
+                            type: object
+                            properties:
+                              placeData:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    Id:
+                                      type: string
+                                      description: 特勤处分类ID（技术中心、防具台、工作台、制药台）
+                                    Status:
+                                      type: string
+                                      description: 状态（闲置中、生产ID中——倒计时{时间s}\n)
+                                    Level:
+                                      type: string
+                                      description: 当前等级
+                                    Name:
+                                      type: string
+                                    placeType:
+                                      type: string
+                                      description: 对应类型（英文ID）
+                                    placeName:
+                                      type: string
+                                      description: 对应中文名
+                                    leftTime:
+                                      type: integer
+                                      description: 剩余时间时间戳
+                                    pushTime:
+                                      type: integer
+                                      description: 生产开始时间戳
+                                    objectId:
+                                      type: integer
+                                      description: 制造物品ID
+                                  required:
+                                    - Id
+                                    - Status
+                                    - Level
+                                    - Name
+                                    - placeType
+                                    - placeName
+                                    - leftTime
+                                    - pushTime
+                                    - objectId
+                                  x-apifox-orders:
+                                    - Id
+                                    - Status
+                                    - Level
+                                    - Name
+                                    - placeType
+                                    - placeName
+                                    - leftTime
+                                    - pushTime
+                                    - objectId
+                              appletRecord:
+                                type: array
+                                items:
+                                  type: string
+                              relateMap:
+                                type: object
+                                properties:
+                                  '13160000010':
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: integer
+                                        description: 未知ID
+                                      objectID:
+                                        type: integer
+                                        description: 物品ID
+                                      objectName:
+                                        type: string
+                                        description: 物品名称
+                                      length:
+                                        type: integer
+                                      width:
+                                        type: integer
+                                      grade:
+                                        type: integer
+                                        description: 物品等级
+                                      weight:
+                                        type: string
+                                        description: 物品重量（KG）
+                                      primaryClass:
+                                        type: string
+                                        description: 一级分类（acc配件、ammo子弹）
+                                      secondClass:
+                                        type: string
+                                        description: 二级分类
+                                      secondClassCN:
+                                        type: string
+                                        description: 二级分类中文名
+                                      pic:
+                                        type: string
+                                        description: 图片
+                                      prePic:
+                                        type: string
+                                        description: 预览图
+                                      avgPrice:
+                                        type: integer
+                                        description: 平均价格
+                                      accDetail:
+                                        type: object
+                                        properties:
+                                          controlSpeed:
+                                            type: integer
+                                            description: 操控速度
+                                          quickSeparate:
+                                            type: integer
+                                          advantage:
+                                            type: object
+                                            properties:
+                                              condition:
+                                                type: string
+                                                description: 条件（比如开启激光镭射时）
+                                              effectList:
+                                                type: array
+                                                items:
+                                                  type: object
+                                                  properties:
+                                                    value:
+                                                      type: string
+                                                    batteryValue:
+                                                      type: integer
+                                                      description: 值
+                                                    batteryColor:
+                                                      type: string
+                                                      description: 值对应颜色（green）
+                                                  required:
+                                                    - value
+                                                    - batteryValue
+                                                    - batteryColor
+                                                  x-apifox-orders:
+                                                    - value
+                                                    - batteryValue
+                                                    - batteryColor
+                                                description: 效果列表
+                                            required:
+                                              - condition
+                                              - effectList
+                                            x-apifox-orders:
+                                              - condition
+                                              - effectList
+                                            description: buff
+                                          disadvantage:
+                                            type: object
+                                            properties:
+                                              condition:
+                                                type: string
+                                                description: 条件（比如开启激光镭射时）
+                                              effectList:
+                                                type: array
+                                                items:
+                                                  type: object
+                                                  properties:
+                                                    value:
+                                                      type: string
+                                                    batteryValue:
+                                                      type: integer
+                                                      description: 值
+                                                    batteryColor:
+                                                      type: string
+                                                      description: 值对应颜色（red）
+                                                  required:
+                                                    - value
+                                                    - batteryValue
+                                                    - batteryColor
+                                                  x-apifox-orders:
+                                                    - value
+                                                    - batteryValue
+                                                    - batteryColor
+                                            required:
+                                              - condition
+                                              - effectList
+                                            x-apifox-orders:
+                                              - condition
+                                              - effectList
+                                            description: debuff
+                                        required:
+                                          - controlSpeed
+                                          - quickSeparate
+                                          - advantage
+                                          - disadvantage
+                                        x-apifox-orders:
+                                          - controlSpeed
+                                          - quickSeparate
+                                          - advantage
+                                          - disadvantage
+                                        description: 配件信息
+                                    required:
+                                      - id
+                                      - objectID
+                                      - objectName
+                                      - length
+                                      - width
+                                      - grade
+                                      - weight
+                                      - primaryClass
+                                      - secondClass
+                                      - secondClassCN
+                                      - pic
+                                      - prePic
+                                      - avgPrice
+                                      - accDetail
+                                    x-apifox-orders:
+                                      - id
+                                      - objectID
+                                      - objectName
+                                      - length
+                                      - width
+                                      - grade
+                                      - weight
+                                      - primaryClass
+                                      - secondClass
+                                      - secondClassCN
+                                      - pic
+                                      - prePic
+                                      - avgPrice
+                                      - accDetail
+                                    description: 物品ID
+                                  '14070000008':
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: integer
+                                        description: 未知ID
+                                      objectID:
+                                        type: integer
+                                        description: 物品ID
+                                      objectName:
+                                        type: string
+                                        description: 物品名
+                                      length:
+                                        type: integer
+                                      width:
+                                        type: integer
+                                      grade:
+                                        type: integer
+                                        description: 物品等级
+                                      weight:
+                                        type: string
+                                        description: 重量（KG）
+                                      primaryClass:
+                                        type: string
+                                        description: 一级分类
+                                      secondClass:
+                                        type: string
+                                        description: 二级分类
+                                      secondClassCN:
+                                        type: string
+                                        description: 二级分类中文名
+                                      thirdClass:
+                                        type: string
+                                        description: 三级分类
+                                      thirdClassCN:
+                                        type: string
+                                        description: 三级分类中文名
+                                      desc:
+                                        type: string
+                                        description: 描述
+                                      pic:
+                                        type: string
+                                        description: 图片
+                                      prePic:
+                                        type: string
+                                        description: 预览图
+                                      avgPrice:
+                                        type: integer
+                                        description: 平均价格
+                                      propsDetail:
+                                        type: object
+                                        properties:
+                                          activeTime:
+                                            type: string
+                                            description: 持续时间
+                                        required:
+                                          - activeTime
+                                        x-apifox-orders:
+                                          - activeTime
+                                        description: 药剂信息
+                                    required:
+                                      - id
+                                      - objectID
+                                      - objectName
+                                      - length
+                                      - width
+                                      - grade
+                                      - weight
+                                      - primaryClass
+                                      - secondClass
+                                      - secondClassCN
+                                      - thirdClass
+                                      - thirdClassCN
+                                      - desc
+                                      - pic
+                                      - prePic
+                                      - avgPrice
+                                      - propsDetail
+                                    x-apifox-orders:
+                                      - id
+                                      - objectID
+                                      - objectName
+                                      - length
+                                      - width
+                                      - grade
+                                      - weight
+                                      - primaryClass
+                                      - secondClass
+                                      - secondClassCN
+                                      - thirdClass
+                                      - thirdClassCN
+                                      - desc
+                                      - pic
+                                      - prePic
+                                      - avgPrice
+                                      - propsDetail
+                                    description: 物品ID
+                                required:
+                                  - '13160000010'
+                                  - '14070000008'
+                                x-apifox-orders:
+                                  - '13160000010'
+                                  - '14070000008'
+                                description: 物品映射表
+                              nowTime:
+                                type: integer
+                                description: 当前时间
+                            required:
+                              - placeData
+                              - appletRecord
+                              - relateMap
+                              - nowTime
+                            x-apifox-orders:
+                              - placeData
+                              - appletRecord
+                              - relateMap
+                              - nowTime
+                          msg:
+                            type: string
+                        required:
+                          - code
+                          - data
+                          - msg
+                        x-apifox-orders:
+                          - code
+                          - data
+                          - msg
+                    required:
+                      - data
+                    x-apifox-orders:
+                      - data
+                  sAmsSerial:
+                    type: string
+                required:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+                x-apifox-orders:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+              examples:
+                '1':
+                  summary: 成功示例
+                  value:
+                    ret: 0
+                    iRet: 0
+                    sMsg: succ
+                    jData:
+                      data:
+                        code: 0
+                        data:
+                          placeData:
+                            - Id: '1007'
+                              Status: 闲置中
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1007_Name
+                              placeType: workbench
+                              placeName: 工作台
+                            - Id: '1005'
+                              Status: 闲置中
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1005_Name
+                              placeType: armory
+                              placeName: 防具台
+                            - Id: '1006'
+                              Status: |
+                                生产240700008中——倒计时35545
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1006_Name
+                              placeType: pharmacy
+                              placeName: 制药台
+                              leftTime: 35545
+                              pushTime: 1750076524
+                              objectId: 14070000008
+                            - Id: '1002'
+                              Status: |
+                                生产231600010中——倒计时8534
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1002_Name
+                              placeType: tech
+                              placeName: 技术中心
+                              leftTime: 8534
+                              pushTime: 1750049513
+                              objectId: 13160000010
+                          appletRecord: []
+                          relateMap:
+                            '13160000010':
+                              id: 10461
+                              objectID: 13160000010
+                              objectName: DBAL-X2紫色激光镭指
+                              length: 1
+                              width: 1
+                              grade: 4
+                              weight: '0.2'
+                              primaryClass: acc
+                              secondClass: accFunctional
+                              secondClassCN: 功能性配件
+                              pic: >-
+                                https://playerhub.df.qq.com/playerhub/60004/object/13160000010.png
+                              prePic: >-
+                                https://playerhub.df.qq.com/playerhub/60004/object/p_13160000010.png
+                              avgPrice: 29430
+                              accDetail:
+                                controlSpeed: -4
+                                quickSeparate: 1
+                                advantage:
+                                  condition: 开启激光镭指时
+                                  effectList:
+                                    - value: 操控速度
+                                      batteryValue: 4
+                                      batteryColor: green
+                                    - value: 腰际射击精度
+                                      batteryValue: 4
+                                      batteryColor: green
+                                    - value: 允许战术据枪姿态
+                                      batteryValue: 4
+                                      batteryColor: green
+                                disadvantage:
+                                  condition: 关闭激光镭指时
+                                  effectList:
+                                    - value: 激光镭射开启时敌人可见
+                                      batteryValue: -4
+                                      batteryColor: red
+                                    - value: 操控速度
+                                      batteryValue: -2
+                                      batteryColor: red
+                            '14070000008':
+                              id: 10084
+                              objectID: 14070000008
+                              objectName: OE2战斗兴奋剂
+                              length: 1
+                              width: 1
+                              grade: 3
+                              weight: '0.1'
+                              primaryClass: props
+                              secondClass: consume
+                              secondClassCN: 消耗品
+                              thirdClass: inject
+                              thirdClassCN: 针剂
+                              desc: 在紧急情况用于回复体力的注射剂，能在短时间内回复大量体力，单次使用。
+                              pic: >-
+                                https://playerhub.df.qq.com/playerhub/60004/object/14070000008.png
+                              prePic: >-
+                                https://playerhub.df.qq.com/playerhub/60004/object/p_14070000008.png
+                              avgPrice: 26944
+                              propsDetail:
+                                activeTime: '3'
+                          nowTime: 1750040979
+                        msg: ok
+                    sAmsSerial: AMS-DFM-0616102939-HAoR50-661959-365589
+                '2':
+                  summary: 成功示例
+                  value:
+                    ret: 0
+                    iRet: 0
+                    sMsg: succ
+                    jData:
+                      data:
+                        code: 0
+                        data:
+                          placeData:
+                            - Id: '1007'
+                              Status: 闲置中
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1007_Name
+                              placeType: workbench
+                              placeName: 工作台
+                            - Id: '1005'
+                              Status: 闲置中
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1005_Name
+                              placeType: armory
+                              placeName: 防具台
+                            - Id: '1006'
+                              Status: |
+                                生产240700008中——倒计时19001
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1006_Name
+                              placeType: pharmacy
+                              placeName: 制药台
+                              leftTime: 19001
+                              pushTime: 1750076524
+                              objectId: 14070000008
+                            - Id: '1002'
+                              Status: 闲置中
+                              Level: '3'
+                              Name: LOC_SafeHouseDevice,1002_Name
+                              placeType: tech
+                              placeName: 技术中心
+                          appletRecord: []
+                          relateMap:
+                            '14070000008':
+                              id: 10084
+                              objectID: 14070000008
+                              objectName: OE2战斗兴奋剂
+                              length: 1
+                              width: 1
+                              grade: 3
+                              weight: '0.1'
+                              primaryClass: props
+                              secondClass: consume
+                              secondClassCN: 消耗品
+                              thirdClass: inject
+                              thirdClassCN: 针剂
+                              desc: 在紧急情况用于回复体力的注射剂，能在短时间内回复大量体力，单次使用。
+                              pic: >-
+                                https://playerhub.df.qq.com/playerhub/60004/object/14070000008.png
+                              prePic: >-
+                                https://playerhub.df.qq.com/playerhub/60004/object/p_14070000008.png
+                              avgPrice: 27732
+                              propsDetail:
+                                activeTime: '3'
+                          nowTime: 1750057523
+                        msg: ok
+                    sAmsSerial: AMS-DFM-0616150523-b35wMB-661959-365589
+                '3':
+                  summary: 全闲置
+                  value:
+                    ret: 0
+                    iRet: 0
+                    sMsg: succ
+                    jData:
+                      data:
+                        code: 0
+                        data:
+                          placeData:
+                            - Id: '1006'
+                              Status: 闲置中
+                              Level: '0'
+                              Name: LOC_SafeHouseDevice,1006_Name
+                              placeType: pharmacy
+                              placeName: 制药台
+                            - Id: '1007'
+                              Status: 闲置中
+                              Level: '0'
+                              Name: LOC_SafeHouseDevice,1007_Name
+                              placeType: workbench
+                              placeName: 工作台
+                            - Id: '1002'
+                              Status: 闲置中
+                              Level: '0'
+                              Name: LOC_SafeHouseDevice,1002_Name
+                              placeType: tech
+                              placeName: 技术中心
+                            - Id: '1005'
+                              Status: 闲置中
+                              Level: '0'
+                              Name: LOC_SafeHouseDevice,1005_Name
+                              placeType: armory
+                              placeName: 防具台
+                          appletRecord: []
+                          nowTime: 1750420990
+                        msg: ok
+                    sAmsSerial: AMS-DFM-0620200310-NPmAsg-661959-365589
+          headers: {}
+          x-apifox-name: 成功
+        x-200:ck过期或未登录:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ret:
+                    type: integer
+                  iRet:
+                    type: integer
+                  sMsg:
+                    type: string
+                  sAmsSerial:
+                    type: string
+                required:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - sAmsSerial
+                x-apifox-orders:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - sAmsSerial
+              example:
+                ret: 101
+                iRet: 101
+                sMsg: 非常抱歉，请先登录！
+                sAmsSerial: AMS-DFM-0620182631-mT7gLB-661959-317814
+          headers: {}
+          x-apifox-name: ck过期或未登录
+      security: []
+      x-apifox-folder: 个人
+      x-apifox-status: developing
+      x-run-in-apifox: https://app.apifox.com/web/project/6583340/apis/api-311774952-run
+components:
+  schemas: {}
+  securitySchemes: {}
+servers:
+  - url: http://dev-cn.your-api-server.com
+    description: 开发环境
+  - url: https://comm.ams.game.qq.com/ide/
+    description: 测试环境
+  - url: https://www.wegame.com.cn/api/v1
+    description: 正式环境
+security: []
+
+```

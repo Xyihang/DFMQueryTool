@@ -1,0 +1,273 @@
+# 昨日日报（烽火地带）（收益top3物品params版）
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.0.1
+info:
+  title: ''
+  description: ''
+  version: 1.0.0
+paths:
+  /ide/:
+    post:
+      summary: 昨日日报（烽火地带）（收益top3物品params版）
+      deprecated: false
+      description: |-
+        烽火日报接口
+        iChartId：316969
+        sIdeToken：NoOapI
+        method：dfm/center.recent.detail
+        请求方式为param参数，其中resourceType为mp是全面战场，sol是烽火
+        对于ck中的tpye，QQ为qc；微信为wx
+      tags:
+        - 个人
+      parameters:
+        - name: iChartId
+          in: query
+          description: ''
+          required: false
+          example: '316969'
+          schema:
+            type: string
+        - name: iSubChartId
+          in: query
+          description: ''
+          required: false
+          example: '316969'
+          schema:
+            type: string
+        - name: sIdeToken
+          in: query
+          description: ''
+          required: false
+          example: NoOapI
+          schema:
+            type: string
+        - name: method
+          in: query
+          description: ''
+          required: false
+          example: dfm/center.recent.detail
+          schema:
+            type: string
+        - name: source
+          in: query
+          description: 2和5都行
+          required: false
+          example: '2'
+          schema:
+            type: string
+        - name: param
+          in: query
+          description: mp是全面战场，sol是烽火
+          required: false
+          example: '{"resourceType":"sol"}'
+          schema:
+            type: string
+        - name: content-type
+          in: header
+          description: ''
+          required: false
+          example: ' application/x-www-form-urlencoded;'
+          schema:
+            type: string
+        - name: cookie
+          in: header
+          description: ''
+          required: false
+          example: >-
+            openid=C2DE7D79A3A9F934EE08F95B747E054E; acctype=qc;
+            appid=101491592; access_token=0569052625742711AC6EB6737713D906
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ret:
+                    type: integer
+                  iRet:
+                    type: integer
+                  sMsg:
+                    type: string
+                  jData:
+                    type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          code:
+                            type: integer
+                          data:
+                            type: object
+                            properties:
+                              solDetail:
+                                type: object
+                                properties:
+                                  recentGain:
+                                    type: integer
+                                    description: 昨日收益
+                                  recentGainDate:
+                                    type: string
+                                    description: 昨日日期
+                                  userCollectionTop:
+                                    type: object
+                                    properties:
+                                      date:
+                                        type: string
+                                      list:
+                                        type: array
+                                        items:
+                                          type: object
+                                          properties:
+                                            objectID:
+                                              type: string
+                                              description: 物品ID
+                                            count:
+                                              type: string
+                                              description: 带出数量
+                                            price:
+                                              type: string
+                                              description: 物品价值
+                                          required:
+                                            - objectID
+                                            - count
+                                            - price
+                                          x-apifox-orders:
+                                            - objectID
+                                            - count
+                                            - price
+                                        description: 物品列表
+                                    required:
+                                      - date
+                                      - list
+                                    x-apifox-orders:
+                                      - date
+                                      - list
+                                    description: 收益top3
+                                required:
+                                  - recentGain
+                                  - recentGainDate
+                                  - userCollectionTop
+                                x-apifox-orders:
+                                  - recentGain
+                                  - recentGainDate
+                                  - userCollectionTop
+                              currentTime:
+                                type: string
+                            required:
+                              - solDetail
+                              - currentTime
+                            x-apifox-orders:
+                              - solDetail
+                              - currentTime
+                          msg:
+                            type: string
+                        required:
+                          - code
+                          - data
+                          - msg
+                        x-apifox-orders:
+                          - code
+                          - data
+                          - msg
+                    required:
+                      - data
+                    x-apifox-orders:
+                      - data
+                  sAmsSerial:
+                    type: string
+                required:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+                x-apifox-orders:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - jData
+                  - sAmsSerial
+              example:
+                ret: 0
+                iRet: 0
+                sMsg: succ
+                jData:
+                  data:
+                    code: 0
+                    data:
+                      solDetail:
+                        recentGain: 2774854
+                        recentGainDate: '2025-06-19'
+                        userCollectionTop:
+                          date: '20250619'
+                          list:
+                            - objectID: '15080050040'
+                              count: '1'
+                              price: '2116619.0'
+                            - objectID: '15030050018'
+                              count: '1'
+                              price: '386546.0'
+                            - objectID: '15070040003'
+                              count: '2'
+                              price: '229860.0'
+                      currentTime: '2025-06-20 19:01:31'
+                    msg: ok
+                sAmsSerial: AMS-DFM-0620190131-FSpQPF-661959-316969
+          headers: {}
+          x-apifox-name: 成功
+        x-200:ck过期或未登录:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ret:
+                    type: integer
+                  iRet:
+                    type: integer
+                  sMsg:
+                    type: string
+                  sAmsSerial:
+                    type: string
+                required:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - sAmsSerial
+                x-apifox-orders:
+                  - ret
+                  - iRet
+                  - sMsg
+                  - sAmsSerial
+              example:
+                ret: 101
+                iRet: 101
+                sMsg: 非常抱歉，请先登录！
+                sAmsSerial: AMS-DFM-0620190211-r35V83-661959-316969
+          headers: {}
+          x-apifox-name: ck过期或未登录
+      security: []
+      x-apifox-folder: 个人
+      x-apifox-status: released
+      x-run-in-apifox: https://app.apifox.com/web/project/6583340/apis/api-318567839-run
+components:
+  schemas: {}
+  securitySchemes: {}
+servers:
+  - url: http://dev-cn.your-api-server.com
+    description: 开发环境
+  - url: https://comm.ams.game.qq.com/ide/
+    description: 测试环境
+  - url: https://www.wegame.com.cn/api/v1
+    description: 正式环境
+security: []
+
+```
