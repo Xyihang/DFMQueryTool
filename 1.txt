@@ -1,0 +1,1648 @@
+import sys
+import json
+import re
+from datetime import datetime
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
+                               QHBoxLayout, QPushButton, QLabel, QMessageBox, QProgressBar)
+from PySide6.QtCore import Qt, QThread, Signal, QTimer
+from PySide6.QtGui import QFont, QPalette, QColor
+import requests
+
+
+class DataQueryManager:
+    """数据查询管理器，负责API请求和数据处理"""
+
+    def __init__(self, openid, access_token):
+        self.openid = openid
+        self.access_token = access_token
+        self.base_url = 'https://comm.ams.game.qq.com/ide/'
+
+    def validate_auth_params(self):
+        """验证身份验证参数"""
+        if not self.openid or not self.access_token:
+            raise ValueError("身份验证参数缺失")
+
+        # 验证openid格式（32位十六进制）
+        if not re.match(r'^[A-F0-9]{32}$', self.openid):
+            raise ValueError("OpenID格式不正确")
+
+        # 验证access_token格式（32位十六进制）
+        if not re.match(r'^[A-F0-9]{32}$', self.access_token):
+            raise ValueError("AccessToken格式不正确")
+
+        return True
+
+    def build_request_params(self, query_type="sol"):
+        """构建API请求参数
+
+        Args:
+            query_type: 查询类型，"sol"表示烽火地带，"mp"表示战场日报
+        """
+        common_params = {
+            'iChartId': '316969',
+            'iSubChartId': '316969',
+            'sIdeToken': 'NoOapI',
+            'method': 'dfm/center.recent.detail',
+            'source': '2'
+        }
+
+        if query_type == "sol":
+            common_params['param'] = '{"resourceType":"sol"}'
+        elif query_type == "mp":
+            common_params['param'] = '{"resourceType":"mp"}'
+
+        return common_params
+
+    def build_request_headers(self):
+        """构建请求头"""
+        return {
+            'content-type': 'application/x-www-form-urlencoded',
+            'cookie': f'openid={self.openid}; acctype=qc; appid=101491592; access_token={self.access_token}'
+        }
+
+    def build_daily_secret_request_params(self):
+        """构建每日密码API请求参数 - 严格按照a.py的成功模式"""
+        params = {
+            'iChartId': '316969',
+            'iSubChartId': '316969',
+            'sIdeToken': 'NoOapI',
+            'method': 'dfm/center.day.secret',
+            'source': '2',
+            'param': '{}'
+        }
+
+        return params
+
+    def send_api_request(self, query_type="sol"):
+        """发送API请求
+
+        Args:
+            query_type: 查询类型，"sol"表示烽火地带，"mp"表示战场日报
+        """
+        # 验证参数
+        self.validate_auth_params()
+
+        # 构建请求
+        params = self.build_request_params(query_type)
+        headers = self.build_request_headers()
+
+        # 发送请求
+        response = requests.post(
+            self.base_url,
+            params=params,
+            headers=headers,
+            timeout=15
+        )
+
+        return response
+
+    def parse_response(self, response):
+        """解析响应数据"""
+        if response.status_code != 200:
+            raise ConnectionError(f"HTTP错误: {response.status_code}")
+
+        try:
+            data = response.json()
+        except json.JSONDecodeError:
+            raise ValueError("响应数据格式错误，无法解析JSON")
+
+        return data
+
+    def extract_sol_data(self, data):
+        """提取烽火地带相关数据"""
+        # 检查基础返回状态
+        if data.get('ret') != 0 or data.get('iRet') != 0:
+            error_msg = data.get('sMsg', '未知错误')
+            raise ValueError(f"API返回错误: {error_msg}")
+
+        # 提取数据
+        jdata = data.get('jData', {})
+        sol_detail = jdata.get('data', {}).get('data', {}).get('solDetail', {})
+
+        if not sol_detail:
+            raise ValueError("未找到烽火地带数据")
+
+        return sol_detail
+
+    def extract_mp_data(self, data):
+        """提取战场日报相关数据"""
+        # 检查基础返回状态
+        if data.get('ret') != 0 or data.get('iRet') != 0:
+            error_msg = data.get('sMsg', '未知错误')
+            raise ValueError(f"API返回错误: {error_msg}")
+
+        # 提取数据
+        jdata = data.get('jData', {})
+        mp_detail = jdata.get('data', {}).get('data', {}).get('mpDetail', {})
+
+        if not mp_detail:
+            raise ValueError("未找到战场日报数据")
+
+        return mp_detail
+
+    def format_item_data(self, items_list):
+        """格式化物品数据"""
+        formatted_items = []
+        for i, item in enumerate(items_list):
+            formatted_item = {
+                'rank': i + 1,
+                'object_id': item.get('objectID', '未知'),
+                'count': item.get('count', '0'),
+                'price': item.get('price', '0.0'),
+                'formatted_price': self.format_price(item.get('price', '0.0'))
+            }
+            formatted_items.append(formatted_item)
+
+        return formatted_items
+
+    def format_price(self, price_str):
+        """格式化价格显示"""
+        try:
+            price = float(price_str)
+            if price >= 1000000:
+                return f"{price / 1000000:.1f}M"
+            elif price >= 1000:
+                return f"{price / 1000:.1f}K"
+            else:
+                return f"{price:,.0f}"
+        except (ValueError, TypeError):
+            return price_str
+
+    def query_fhzd_data(self):
+        """查询烽火地带数据"""
+        try:
+            # 发送请求
+            response = self.send_api_request()
+
+            # 解析响应
+            data = self.parse_response(response)
+
+            # 提取数据
+            sol_detail = self.extract_sol_data(data)
+
+            # 处理数据
+            result = {
+                'recent_gain': sol_detail.get('recentGain', 0),
+                'recent_gain_date': sol_detail.get('recentGainDate', '未知'),
+                'collection_date': sol_detail.get('userCollectionTop', {}).get('date', '未知'),
+                'items_list': self.format_item_data(sol_detail.get('userCollectionTop', {}).get('list', [])),
+                'current_time': data.get('jData', {}).get('data', {}).get('currentTime', '未知'),
+                'success': True
+            }
+
+            return result
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def query_battle_data(self):
+        """查询战场日报数据"""
+        try:
+            # 发送请求
+            response = self.send_api_request("mp")
+
+            # 解析响应
+            data = self.parse_response(response)
+
+            # 提取数据
+            mp_detail = self.extract_mp_data(data)
+
+            # 处理数据
+            result = {
+                'total_kill_num': mp_detail.get('totalKillNum', 0),
+                'total_win_num': mp_detail.get('totalWinNum', 0),
+                'total_fight_num': mp_detail.get('totalFightNum', 0),
+                'total_score': mp_detail.get('totalScore', 0),
+                'most_use_force_type': mp_detail.get('mostUseForceType', 0),
+                'recent_date': mp_detail.get('recentDate', '未知'),
+                'best_match': mp_detail.get('bestMatch', {}),
+                'current_time': data.get('jData', {}).get('data', {}).get('currentTime', '未知'),
+                'success': True
+            }
+
+            return result
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def format_battle_data(self, battle_data):
+        """格式化战场数据用于显示"""
+        formatted_lines = []
+
+        # 基本信息
+        formatted_lines.append(f"总击杀数: {battle_data.get('total_kill_num', 0):,}")
+        formatted_lines.append(f"总获胜局数: {battle_data.get('total_win_num', 0):,}")
+        formatted_lines.append(f"总完成局数: {battle_data.get('total_fight_num', 0):,}")
+        formatted_lines.append(f"总得分: {battle_data.get('total_score', 0):,}")
+        formatted_lines.append(f"常用干员ID: {battle_data.get('most_use_force_type', '未知')}")
+        formatted_lines.append(f"数据日期: {battle_data.get('recent_date', '未知')}")
+
+        # 高光对局信息
+        best_match = battle_data.get('best_match', {})
+        if best_match:
+            formatted_lines.append("")
+            formatted_lines.append("高光对局信息:")
+            formatted_lines.append(f"  击杀数: {best_match.get('killNum', 0)}")
+            formatted_lines.append(f"  援助数: {best_match.get('assist', 0)}")
+            formatted_lines.append(f"  死亡数: {best_match.get('death', 0)}")
+            formatted_lines.append(f"  得分: {best_match.get('score', 0):,}")
+            formatted_lines.append(f"  对局时长: {best_match.get('gameTime', 0)}秒")
+            formatted_lines.append(f"  是否胜利: {'胜利' if best_match.get('isWinner', 0) == 1 else '失败'}")
+            formatted_lines.append(f"  地图ID: {best_match.get('mapID', '未知')}")
+            formatted_lines.append(f"  对局时间: {best_match.get('dtEventTime', '未知')}")
+
+        return "\n".join(formatted_lines)
+
+    def format_sol_weekly_data(self, sol_weekly_data):
+        """格式化烽火周报数据用于显示"""
+        formatted_lines = []
+
+        try:
+            # 基本统计信息
+            formatted_lines.append("=== 烽火周报统计 ===")
+            formatted_lines.append(f"本周对局数: {sol_weekly_data.get('total_sol_num', '0')}")
+            formatted_lines.append(f"本周撤离成功数: {sol_weekly_data.get('total_exacuation_num', '0')}")
+
+            # 安全处理数字格式化
+            try:
+                gained_price = int(sol_weekly_data.get('gained_price', '0'))
+                formatted_lines.append(f"本周总带出哈夫币: {gained_price:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总带出哈夫币: {sol_weekly_data.get('gained_price', '0')}")
+
+            try:
+                consume_price = int(sol_weekly_data.get('consume_price', '0'))
+                formatted_lines.append(f"本周总带入哈夫币: {consume_price:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总带入哈夫币: {sol_weekly_data.get('consume_price', '0')}")
+
+            try:
+                rise_price = int(sol_weekly_data.get('rise_price', '0'))
+                formatted_lines.append(f"本周总利润: {rise_price:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总利润: {sol_weekly_data.get('rise_price', '0')}")
+
+            formatted_lines.append(f"排位分数: {sol_weekly_data.get('rank_score', '0')}")
+
+            # 游戏时长和效率
+            formatted_lines.append("")
+            formatted_lines.append("=== 游戏效率 ===")
+
+            # 安全处理游戏时长
+            try:
+                total_online_time = int(sol_weekly_data.get('total_online_time', '0'))
+                hours = total_online_time // 3600
+                minutes = (total_online_time % 3600) // 60
+                formatted_lines.append(f"本周在线时长: {hours}小时{minutes}分钟")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周在线时长: {sol_weekly_data.get('total_online_time', '0')}秒")
+
+            try:
+                total_mileage = int(sol_weekly_data.get('total_mileage', '0'))
+                formatted_lines.append(f"本周总里程: {total_mileage:,}米")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总里程: {sol_weekly_data.get('total_mileage', '0')}米")
+
+            # 战斗统计 - 增强战斗数据显示
+            formatted_lines.append("")
+            formatted_lines.append("=== 战斗统计 ===")
+            formatted_lines.append(f"本周总击杀: {sol_weekly_data.get('total_kill_count', '0')}")
+            formatted_lines.append(f"本周击败干员数: {sol_weekly_data.get('total_kill_player', '0')}")
+            formatted_lines.append(f"本周击杀AI数: {sol_weekly_data.get('total_kill_ai', '0')}")
+            formatted_lines.append(f"本周击杀BOSS数: {sol_weekly_data.get('total_kill_boss', '0')}")
+            formatted_lines.append(f"本周死亡数: {sol_weekly_data.get('total_death_count', '0')}")
+
+            # 计算KD比
+            try:
+                total_kill = int(sol_weekly_data.get('total_kill_count', '0'))
+                total_death = int(sol_weekly_data.get('total_death_count', '0'))
+                kd_ratio = total_kill / total_death if total_death > 0 else total_kill
+                formatted_lines.append(f"KD比: {kd_ratio:.2f}")
+            except (ValueError, TypeError):
+                formatted_lines.append("KD比: 无法计算")
+
+            # 任务完成情况
+            formatted_lines.append(f"本周完成任务数: {sol_weekly_data.get('total_quest_num', '0')}")
+            formatted_lines.append(f"本周救援次数: {sol_weekly_data.get('total_rescue_num', '0')}")
+
+            # 计算撤离成功率
+            try:
+                total_sol = int(sol_weekly_data.get('total_sol_num', '0'))
+                total_exacuation = int(sol_weekly_data.get('total_exacuation_num', '0'))
+                success_rate = (total_exacuation / total_sol * 100) if total_sol > 0 else 0
+                formatted_lines.append(f"撤离成功率: {success_rate:.1f}%")
+            except (ValueError, TypeError):
+                formatted_lines.append("撤离成功率: 无法计算")
+
+            # 特殊统计
+            formatted_lines.append("")
+            formatted_lines.append("=== 特殊统计 ===")
+            formatted_lines.append(f"本周百万撤离场次: {sol_weekly_data.get('gained_price_overmillion_num', '0')}")
+            formatted_lines.append(f"本周被鳄鱼杀死次数: {sol_weekly_data.get('kill_by_crocodile_num', '0')}")
+            formatted_lines.append(f"本周曼德尔砖破译数: {sol_weekly_data.get('mandel_brick_num', '0')}")
+            formatted_lines.append(f"本周搜索鸟巢数: {sol_weekly_data.get('search_birdsnest_num', '0')}")
+            formatted_lines.append(f"本周消耗钥匙数: {sol_weekly_data.get('use_keycard_num', '0')}")
+
+            # 干员使用统计
+            armed_force_info = sol_weekly_data.get('total_armed_force_id_num', '')
+            if armed_force_info:
+                formatted_lines.append("")
+                formatted_lines.append("=== 干员使用统计 ===")
+                try:
+                    entries = armed_force_info.split('#')
+                    for entry in entries:
+                        if entry.startswith('{"ArmedForceId":') and 'inum' in entry:
+                            force_id = entry.split('"')[3] if '"' in entry else entry.split("'")[3]
+                            inum = entry.split('"')[7] if '"' in entry else entry.split("'")[7]
+                            formatted_lines.append(f"干员{force_id}: {inum}场")
+                except:
+                    formatted_lines.append(f"干员使用信息: {armed_force_info}")
+
+            # 地图游玩统计
+            map_info = sol_weekly_data.get('total_mapid_num', '')
+            if map_info:
+                formatted_lines.append("")
+                formatted_lines.append("=== 地图游玩统计 ===")
+                try:
+                    entries = map_info.split('#')
+                    for entry in entries:
+                        if entry.startswith('{"MapId":') and 'inum' in entry:
+                            map_id = entry.split('"')[3] if '"' in entry else entry.split("'")[3]
+                            inum = entry.split('"')[7] if '"' in entry else entry.split("'")[7]
+                            formatted_lines.append(f"地图{map_id}: {inum}场")
+                except:
+                    formatted_lines.append(f"地图信息: {map_info}")
+
+        except Exception as e:
+            # 如果格式化过程中出现错误，返回简单的错误信息
+            formatted_lines = ["数据格式化错误，请检查数据格式"]
+            formatted_lines.append(f"错误详情: {str(e)}")
+
+        return "\n".join(formatted_lines)
+
+    def build_weekly_request_params(self, stat_date=None):
+        """构建战场周报API请求参数
+
+        Args:
+            stat_date: 统计日期，格式为YYYYMMDD，默认为上周日
+        """
+        if not stat_date:
+            # 如果没有提供日期，默认使用上周日
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            # 获取上周日
+            last_sunday = today - timedelta(days=(today.weekday() + 1) % 7 + 7)
+            stat_date = last_sunday.strftime("%Y%m%d")
+
+        params = {
+            'iChartId': '316968',
+            'iSubChartId': '316968',
+            'sIdeToken': 'KfXJwH',
+            'method': 'dfm/weekly.mp.record',
+            'source': '5',
+            'sArea': '36',
+            'statDate': stat_date
+        }
+
+        return params
+
+    def build_weekly_request_params(self, stat_date=None):
+        """构建战场周报API请求参数
+
+        Args:
+            stat_date: 统计日期，格式为YYYYMMDD，默认为上周日
+        """
+        if not stat_date:
+            # 如果没有提供日期，默认使用上周日
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            # 获取上周日
+            last_sunday = today - timedelta(days=(today.weekday() + 1) % 7 + 7)
+            stat_date = last_sunday.strftime("%Y%m%d")
+
+        params = {
+            'iChartId': '316968',
+            'iSubChartId': '316968',
+            'sIdeToken': 'KfXJwH',
+            'method': 'dfm/weekly.mp.record',
+            'source': '5',
+            'sArea': '36',
+            'statDate': stat_date
+        }
+
+        return params
+
+    def build_sol_weekly_request_params(self, stat_date=None):
+        """构建烽火周报API请求参数
+
+        Args:
+            stat_date: 统计日期，格式为YYYYMMDD，默认为上周日
+        """
+        if not stat_date:
+            # 如果没有提供日期，默认使用上周日
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            # 获取上周日
+            last_sunday = today - timedelta(days=(today.weekday() + 1) % 7 + 7)
+            stat_date = last_sunday.strftime("%Y%m%d")
+
+        params = {
+            'iChartId': '316968',
+            'iSubChartId': '316968',
+            'sIdeToken': 'KfXJwH',
+            'method': 'dfm/weekly.sol.record',
+            'source': '5',
+            'sArea': '36',
+            'statDate': stat_date
+        }
+
+        return params
+
+    def extract_weekly_data(self, data):
+        """提取战场周报数据"""
+        # 检查基础返回状态
+        if data.get('ret') != 0 or data.get('iRet') != 0:
+            error_msg = data.get('sMsg', '未知错误')
+            raise ValueError(f"API返回错误: {error_msg}")
+
+        # 提取数据
+        jdata = data.get('jData', {})
+        weekly_data = jdata.get('data', {}).get('data', {})
+
+        if not weekly_data:
+            raise ValueError("未找到战场周报数据")
+
+        return weekly_data
+
+    def extract_sol_weekly_data(self, data):
+        """提取烽火周报数据"""
+        # 检查基础返回状态
+        if data.get('ret') != 0 or data.get('iRet') != 0:
+            error_msg = data.get('sMsg', '未知错误')
+            raise ValueError(f"API返回错误: {error_msg}")
+
+        # 提取数据
+        jdata = data.get('jData', {})
+        sol_weekly_data = jdata.get('data', {}).get('data', {})
+
+        if not sol_weekly_data:
+            raise ValueError("未找到烽火周报数据")
+
+        return sol_weekly_data
+
+    def query_weekly_data(self):
+        """查询战场周报数据"""
+        try:
+            # 构建请求参数
+            params = self.build_weekly_request_params()
+            headers = self.build_request_headers()
+
+            # 发送请求
+            response = requests.post(
+                self.base_url,
+                params=params,
+                headers=headers,
+                timeout=15
+            )
+
+            # 解析响应
+            data = self.parse_response(response)
+
+            # 提取数据
+            weekly_data = self.extract_weekly_data(data)
+
+            # 处理数据
+            result = {
+                'consume_bullet_num': weekly_data.get('Consume_Bullet_Num', '0'),
+                'deploy_armed_force_type_kill_num': weekly_data.get('DeployArmedForceType_KillNum', '0'),
+                'deploy_armed_force_type_gametime': weekly_data.get('DeployArmedForceType_gametime', '0'),
+                'deploy_armed_force_type_inum': weekly_data.get('DeployArmedForceType_inum', '0'),
+                'hit_bullet_num': weekly_data.get('Hit_Bullet_Num', '0'),
+                'kill_num': weekly_data.get('Kill_Num', '0'),
+                'kill_type1_num': weekly_data.get('Kill_type1_Num', '0'),
+                'rank_match_score': weekly_data.get('Rank_Match_Score', '0'),
+                'rescue_campmate_count': weekly_data.get('Rescue_Campmate_Count', '0'),
+                'rescue_teammate_count': weekly_data.get('Rescue_Teammate_Count', '0'),
+                's_battle_support_cost_score': weekly_data.get('SBattle_Support_CostScore', '0'),
+                's_battle_support_use_num': weekly_data.get('SBattle_Support_UseNum', '0'),
+                'teammate_reborn_num': weekly_data.get('Teammate_Reborn_Num', '0'),
+                'used_time': weekly_data.get('Used_Time', '0'),
+                'by_rescue_num': weekly_data.get('by_Rescue_num', '0'),
+                'continuous_kill_num': weekly_data.get('continuous_Kill_Num', '0'),
+                'max_inum_deploy_armed_force_type': weekly_data.get('max_inum_DeployArmedForceType', '未知'),
+                'max_inum_mapid': weekly_data.get('max_inum_mapid', '未知'),
+                'total_occupy': weekly_data.get('total_Occupy', '0'),
+                'total_gametime': weekly_data.get('total_gametime', '0'),
+                'total_num': weekly_data.get('total_num', '0'),
+                'total_score': weekly_data.get('total_score', '0'),
+                'win_num': weekly_data.get('win_num', '0'),
+                'current_time': data.get('jData', {}).get('data', {}).get('currentTime', '未知'),
+                'success': True
+            }
+
+            return result
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def query_sol_weekly_data(self):
+        """查询烽火周报数据"""
+        try:
+            # 构建请求参数
+            params = self.build_sol_weekly_request_params()
+            headers = self.build_request_headers()
+
+            # 发送请求
+            response = requests.post(
+                self.base_url,
+                params=params,
+                headers=headers,
+                timeout=15
+            )
+
+            # 解析响应
+            data = self.parse_response(response)
+
+            # 提取数据
+            sol_weekly_data = self.extract_sol_weekly_data(data)
+
+            # 处理数据
+            result = {
+                'carry_out_highprice_list': sol_weekly_data.get('CarryOut_highprice_list', ''),
+                'gained_price_overmillion_num': sol_weekly_data.get('GainedPrice_overmillion_num', '0'),
+                'gained_price': sol_weekly_data.get('Gained_Price', '0'),
+                'kill_by_crocodile_num': sol_weekly_data.get('Kill_ByCrocodile_num', '0'),
+                'mandel_brick_num': sol_weekly_data.get('Mandel_brick_num', '0'),
+                'rank_score': sol_weekly_data.get('Rank_Score', '0'),
+                'teammate_price_overzero_num': sol_weekly_data.get('TeammatePrice_overzero_num', '0'),
+                'total_mileage': sol_weekly_data.get('Total_Mileage', '0'),
+                'total_price': sol_weekly_data.get('Total_Price', ''),
+                'consume_price': sol_weekly_data.get('consume_Price', '0'),
+                'rise_price': sol_weekly_data.get('rise_Price', '0'),
+                'search_birdsnest_num': sol_weekly_data.get('search_Birdsnest_num', '0'),
+                'total_armed_force_id_num': sol_weekly_data.get('total_ArmedForceId_num', ''),
+                'total_death_count': sol_weekly_data.get('total_Death_Count', '0'),
+                'total_kill_ai': sol_weekly_data.get('total_Kill_AI', '0'),
+                'total_kill_boss': sol_weekly_data.get('total_Kill_Boss', '0'),
+                'total_kill_count': sol_weekly_data.get('total_Kill_Count', '0'),
+                'total_kill_player': sol_weekly_data.get('total_Kill_Player', '0'),
+                'total_online_time': sol_weekly_data.get('total_Online_Time', '0'),
+                'total_quest_num': sol_weekly_data.get('total_Quest_num', '0'),
+                'total_rescue_num': sol_weekly_data.get('total_Rescue_num', '0'),
+                'total_exacuation_num': sol_weekly_data.get('total_exacuation_num', '0'),
+                'total_mapid_num': sol_weekly_data.get('total_mapid_num', ''),
+                'total_sol_num': sol_weekly_data.get('total_sol_num', '0'),
+                'use_keycard_num': sol_weekly_data.get('use_Keycard_num', '0'),
+                'current_time': data.get('jData', {}).get('data', {}).get('currentTime', '未知'),
+                'success': True
+            }
+
+            return result
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def format_weekly_data(self, weekly_data):
+        """格式化战场周报数据用于显示"""
+        formatted_lines = []
+
+        try:
+            # 基本统计信息
+            formatted_lines.append("=== 战场周报统计 ===")
+            formatted_lines.append(f"总对局场次: {weekly_data.get('total_num', '0')}")
+            formatted_lines.append(f"胜场: {weekly_data.get('win_num', '0')}")
+            formatted_lines.append(f"总击杀数: {weekly_data.get('kill_num', '0')}")
+
+            # 安全处理数字格式化
+            try:
+                total_score = int(weekly_data.get('total_score', '0'))
+                formatted_lines.append(f"总得分: {total_score:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"总得分: {weekly_data.get('total_score', '0')}")
+
+            formatted_lines.append(f"排位分: {weekly_data.get('rank_match_score', '0')}")
+
+            # 游戏时长和效率
+            formatted_lines.append("")
+            formatted_lines.append("=== 游戏效率 ===")
+
+            # 安全处理游戏时长
+            try:
+                total_gametime = int(weekly_data.get('total_gametime', '0'))
+                hours = total_gametime // 3600
+                minutes = (total_gametime % 3600) // 60
+                formatted_lines.append(f"总游戏时长: {hours}小时{minutes}分钟")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"总游戏时长: {weekly_data.get('total_gametime', '0')}秒")
+
+            # 安全处理命中率计算
+            try:
+                consume_bullet = int(weekly_data.get('consume_bullet_num', '0'))
+                hit_bullet = int(weekly_data.get('hit_bullet_num', '0'))
+                hit_rate = 0
+                if consume_bullet > 0:
+                    hit_rate = hit_bullet / consume_bullet * 100
+                formatted_lines.append(f"命中率: {hit_rate:.1f}% ({hit_bullet}/{consume_bullet})")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"命中率: 0.0% (0/0)")
+
+            # 干员统计
+            formatted_lines.append("")
+            formatted_lines.append("=== 本命干员统计 ===")
+            formatted_lines.append(f"干员ID: {weekly_data.get('max_inum_deploy_armed_force_type', '未知')}")
+            formatted_lines.append(f"完成对局: {weekly_data.get('deploy_armed_force_type_inum', '0')}")
+
+            # 安全处理干员游戏时长
+            try:
+                deploy_gametime = int(weekly_data.get('deploy_armed_force_type_gametime', '0'))
+                formatted_lines.append(f"游戏时长: {deploy_gametime // 60}分钟")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"游戏时长: {weekly_data.get('deploy_armed_force_type_gametime', '0')}秒")
+
+            formatted_lines.append(f"击杀数: {weekly_data.get('deploy_armed_force_type_kill_num', '0')}")
+
+            # 团队协作
+            formatted_lines.append("")
+            formatted_lines.append("=== 团队协作 ===")
+            formatted_lines.append(f"救援小队队友: {weekly_data.get('rescue_teammate_count', '0')}次")
+            formatted_lines.append(f"救援阵营队友: {weekly_data.get('rescue_campmate_count', '0')}次")
+            formatted_lines.append(f"被救援次数: {weekly_data.get('by_rescue_num', '0')}次")
+            formatted_lines.append(f"队友重生: {weekly_data.get('teammate_reborn_num', '0')}次")
+
+            # 高级统计
+            formatted_lines.append("")
+            formatted_lines.append("=== 高级统计 ===")
+            formatted_lines.append(f"最高连续击杀: {weekly_data.get('continuous_kill_num', '0')}")
+            formatted_lines.append(f"载具击杀: {weekly_data.get('kill_type1_num', '0')}")
+            formatted_lines.append(f"占点数: {weekly_data.get('total_occupy', '0')}")
+            formatted_lines.append(f"支援呼叫: {weekly_data.get('s_battle_support_use_num', '0')}次")
+
+            # 安全处理支援消耗分数
+            try:
+                support_cost = int(weekly_data.get('s_battle_support_cost_score', '0'))
+                formatted_lines.append(f"支援消耗分数: {support_cost:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"支援消耗分数: {weekly_data.get('s_battle_support_cost_score', '0')}")
+
+            # 地图信息
+            map_info = weekly_data.get('max_inum_mapid', '')
+            if map_info and map_info != '未知':
+                formatted_lines.append("")
+                formatted_lines.append("=== 地图偏好 ===")
+                # 解析地图信息格式: {'MapId':303,'inum':1}#{'MapId':107,'inum':1}...
+                try:
+                    map_entries = map_info.split('#')
+                    for entry in map_entries:
+                        if entry.startswith('{"MapId":') and 'inum' in entry:
+                            map_id = entry.split('"')[3] if '"' in entry else entry.split("'")[3]
+                            inum = entry.split('"')[7] if '"' in entry else entry.split("'")[7]
+                            formatted_lines.append(f"地图{map_id}: {inum}场")
+                except:
+                    formatted_lines.append(f"地图信息: {map_info}")
+
+        except Exception as e:
+            # 如果格式化过程中出现错误，返回简单的错误信息
+            formatted_lines = ["数据格式化错误，请检查数据格式"]
+            formatted_lines.append(f"错误详情: {str(e)}")
+
+        return "\n".join(formatted_lines)
+
+    def format_sol_weekly_data(self, sol_weekly_data):
+        """格式化烽火周报数据用于显示"""
+        formatted_lines = []
+
+        try:
+            # 基本统计信息
+            formatted_lines.append("=== 烽火周报统计 ===")
+            formatted_lines.append(f"本周对局数: {sol_weekly_data.get('total_sol_num', '0')}")
+            formatted_lines.append(f"本周撤离成功数: {sol_weekly_data.get('total_exacuation_num', '0')}")
+
+            # 安全处理数字格式化
+            try:
+                gained_price = int(sol_weekly_data.get('gained_price', '0'))
+                formatted_lines.append(f"本周总带出哈夫币: {gained_price:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总带出哈夫币: {sol_weekly_data.get('gained_price', '0')}")
+
+            try:
+                consume_price = int(sol_weekly_data.get('consume_price', '0'))
+                formatted_lines.append(f"本周总带入哈夫币: {consume_price:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总带入哈夫币: {sol_weekly_data.get('consume_price', '0')}")
+
+            try:
+                rise_price = int(sol_weekly_data.get('rise_price', '0'))
+                formatted_lines.append(f"本周总利润: {rise_price:,}")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总利润: {sol_weekly_data.get('rise_price', '0')}")
+
+            formatted_lines.append(f"排位分数: {sol_weekly_data.get('rank_score', '0')}")
+
+            # 游戏时长和效率
+            formatted_lines.append("")
+            formatted_lines.append("=== 游戏效率 ===")
+
+            # 安全处理游戏时长
+            try:
+                total_online_time = int(sol_weekly_data.get('total_online_time', '0'))
+                hours = total_online_time // 3600
+                minutes = (total_online_time % 3600) // 60
+                formatted_lines.append(f"本周在线时长: {hours}小时{minutes}分钟")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周在线时长: {sol_weekly_data.get('total_online_time', '0')}秒")
+
+            try:
+                total_mileage = int(sol_weekly_data.get('total_mileage', '0'))
+                formatted_lines.append(f"本周总里程: {total_mileage:,}米")
+            except (ValueError, TypeError):
+                formatted_lines.append(f"本周总里程: {sol_weekly_data.get('total_mileage', '0')}米")
+
+            # 战斗统计 - 增强战斗数据显示
+            formatted_lines.append("")
+            formatted_lines.append("=== 战斗统计 ===")
+            formatted_lines.append(f"本周总击杀: {sol_weekly_data.get('total_kill_count', '0')}")
+            formatted_lines.append(f"本周击败干员数: {sol_weekly_data.get('total_kill_player', '0')}")
+            formatted_lines.append(f"本周击杀AI数: {sol_weekly_data.get('total_kill_ai', '0')}")
+            formatted_lines.append(f"本周击杀BOSS数: {sol_weekly_data.get('total_kill_boss', '0')}")
+            formatted_lines.append(f"本周死亡数: {sol_weekly_data.get('total_death_count', '0')}")
+
+            # 计算KD比
+            try:
+                total_kill = int(sol_weekly_data.get('total_kill_count', '0'))
+                total_death = int(sol_weekly_data.get('total_death_count', '0'))
+                kd_ratio = total_kill / total_death if total_death > 0 else total_kill
+                formatted_lines.append(f"KD比: {kd_ratio:.2f}")
+            except (ValueError, TypeError):
+                formatted_lines.append("KD比: 无法计算")
+
+            # 任务完成情况
+            formatted_lines.append(f"本周完成任务数: {sol_weekly_data.get('total_quest_num', '0')}")
+            formatted_lines.append(f"本周救援次数: {sol_weekly_data.get('total_rescue_num', '0')}")
+
+            # 计算撤离成功率
+            try:
+                total_sol = int(sol_weekly_data.get('total_sol_num', '0'))
+                total_exacuation = int(sol_weekly_data.get('total_exacuation_num', '0'))
+                success_rate = (total_exacuation / total_sol * 100) if total_sol > 0 else 0
+                formatted_lines.append(f"撤离成功率: {success_rate:.1f}%")
+            except (ValueError, TypeError):
+                formatted_lines.append("撤离成功率: 无法计算")
+
+            # 特殊统计
+            formatted_lines.append("")
+            formatted_lines.append("=== 特殊统计 ===")
+            formatted_lines.append(f"本周百万撤离场次: {sol_weekly_data.get('gained_price_overmillion_num', '0')}")
+            formatted_lines.append(f"本周被鳄鱼杀死次数: {sol_weekly_data.get('kill_by_crocodile_num', '0')}")
+            formatted_lines.append(f"本周曼德尔砖破译数: {sol_weekly_data.get('mandel_brick_num', '0')}")
+            formatted_lines.append(f"本周搜索鸟巢数: {sol_weekly_data.get('search_birdsnest_num', '0')}")
+            formatted_lines.append(f"本周消耗钥匙数: {sol_weekly_data.get('use_keycard_num', '0')}")
+
+            # 干员使用统计
+            armed_force_info = sol_weekly_data.get('total_armed_force_id_num', '')
+            if armed_force_info:
+                formatted_lines.append("")
+                formatted_lines.append("=== 干员使用统计 ===")
+                try:
+                    entries = armed_force_info.split('#')
+                    for entry in entries:
+                        if entry.startswith('{"ArmedForceId":') and 'inum' in entry:
+                            force_id = entry.split('"')[3] if '"' in entry else entry.split("'")[3]
+                            inum = entry.split('"')[7] if '"' in entry else entry.split("'")[7]
+                            formatted_lines.append(f"干员{force_id}: {inum}场")
+                except:
+                    formatted_lines.append(f"干员使用信息: {armed_force_info}")
+
+            # 地图游玩统计
+            map_info = sol_weekly_data.get('total_mapid_num', '')
+            if map_info:
+                formatted_lines.append("")
+                formatted_lines.append("=== 地图游玩统计 ===")
+                try:
+                    entries = map_info.split('#')
+                    for entry in entries:
+                        if entry.startswith('{"MapId":') and 'inum' in entry:
+                            map_id = entry.split('"')[3] if '"' in entry else entry.split("'")[3]
+                            inum = entry.split('"')[7] if '"' in entry else entry.split("'")[7]
+                            formatted_lines.append(f"地图{map_id}: {inum}场")
+                except:
+                    formatted_lines.append(f"地图信息: {map_info}")
+
+        except Exception as e:
+            # 如果格式化过程中出现错误，返回简单的错误信息
+            formatted_lines = ["数据格式化错误，请检查数据格式"]
+            formatted_lines.append(f"错误详情: {str(e)}")
+
+        return "\n".join(formatted_lines)
+
+    def build_weekly_request_params(self, stat_date=None):
+        """构建战场周报API请求参数
+
+        Args:
+            stat_date: 统计日期，格式为YYYYMMDD，默认为上周日
+        """
+        if not stat_date:
+            # 如果没有提供日期，默认使用上周日
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            # 获取上周日
+            last_sunday = today - timedelta(days=(today.weekday() + 1) % 7 + 7)
+            stat_date = last_sunday.strftime("%Y%m%d")
+
+        params = {
+            'iChartId': '316968',
+            'iSubChartId': '316968',
+            'sIdeToken': 'KfXJwH',
+            'method': 'dfm/weekly.mp.record',
+            'source': '5',
+            'sArea': '36',
+            'statDate': stat_date
+        }
+
+        return params
+
+    def build_currency_request_params(self, currency_type):
+        """构建货币资产查询API请求参数
+
+        Args:
+            currency_type: 货币类型，"hafu"=哈夫币，"triangle_ticket"=三角券，"triangle_coin"=三角币
+        """
+        # 货币类型映射
+        currency_map = {
+            "hafu": "17020000010",  # 哈夫币
+            "triangle_ticket": "17888808889",  # 三角券
+            "triangle_coin": "17888808888"  # 三角币
+        }
+
+        if currency_type not in currency_map:
+            raise ValueError(f"不支持的货币类型: {currency_type}")
+
+        params = {
+            'iChartId': '319386',
+            'iSubChartId': '319386',
+            'sIdeToken': 'zMemOt',
+            'item': currency_map[currency_type],
+            'type': '3'  # 3表示货币查询
+        }
+
+        return params
+
+    def query_currency_data(self, currency_type):
+        """查询单个货币资产数据
+
+        Args:
+            currency_type: 货币类型，"hafu"=哈夫币，"triangle_ticket"=三角券，"triangle_coin"=三角币
+        """
+        try:
+            # 构建请求参数
+            params = self.build_currency_request_params(currency_type)
+            headers = self.build_request_headers()
+
+            # 发送请求
+            response = requests.post(
+                self.base_url,
+                params=params,
+                headers=headers,
+                timeout=15
+            )
+
+            # 解析响应
+            data = self.parse_response(response)
+
+            # 检查返回状态
+            if data.get('ret') != 0 or data.get('iRet') != 0:
+                error_msg = data.get('sMsg', '未知错误')
+                return {
+                    'success': False,
+                    'error': f"API错误: {error_msg}"
+                }
+
+            # 提取货币数据
+            jdata = data.get('jData', {})
+            if jdata.get('iRet') != '0' or jdata.get('sMsg') != 'ok':
+                error_msg = jdata.get('sMsg', '数据获取失败')
+                return {
+                    'success': False,
+                    'error': f"数据错误: {error_msg}"
+                }
+
+            currency_data = jdata.get('data', [])
+            if not currency_data:
+                return {
+                    'success': False,
+                    'error': '没有找到货币数据'
+                }
+
+            # 获取货币数量
+            currency_amount = currency_data[0].get('totalMoney', '0')
+
+            # 货币名称映射
+            currency_names = {
+                "hafu": "哈夫币",
+                "triangle_ticket": "三角券",
+                "triangle_coin": "三角币"
+            }
+
+            return {
+                'success': True,
+                'data': {
+                    'currency_type': currency_type,
+                    'currency_name': currency_names[currency_type],
+                    'amount': currency_amount
+                }
+            }
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"货币查询过程错误: {str(e)}"
+            }
+
+    def query_all_currency_data(self):
+        """查询所有三种货币资产数据"""
+        try:
+            currency_types = ["hafu", "triangle_ticket", "triangle_coin"]
+            results = {}
+            errors = []
+
+            for currency_type in currency_types:
+                result = self.query_currency_data(currency_type)
+                if result['success']:
+                    results[currency_type] = result['data']
+                else:
+                    errors.append(f"{currency_type}: {result['error']}")
+
+            if results:
+                return {
+                    'success': True,
+                    'data': results,
+                    'errors': errors if errors else None
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f"所有货币查询失败: {'; '.join(errors)}"
+                }
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"批量货币查询过程错误: {str(e)}"
+            }
+
+    def build_daily_secret_request_params(self):
+        """构建每日密码API请求参数 - 严格按照a.py的成功模式"""
+        params = {
+            'iChartId': '316969',
+            'iSubChartId': '316969',
+            'sIdeToken': 'NoOapI',
+            'method': 'dfm/center.day.secret',
+            'source': '2',
+            'param': '{}'
+        }
+
+        return params
+
+    def query_daily_secret_data(self):
+        """查询每日密码数据 - 严格按照a.py的成功模式"""
+        try:
+            # 构建请求参数 - 使用和a.py完全相同的参数
+            params = self.build_daily_secret_request_params()
+            headers = self.build_request_headers()
+
+            # 使用和a.py完全相同的URL和请求方式
+            # a.py使用的是标准的/ide/路径，不是根路径
+            response = requests.post(
+                self.base_url,  # 使用标准的base_url: https://comm.ams.game.qq.com/ide/
+                params=params,  # 使用params而不是data，和a.py保持一致
+                headers=headers,
+                timeout=15
+            )
+
+            # 解析响应
+            data = self.parse_response(response)
+
+            # 按照a.py的方式检查返回状态
+            if data.get('ret') != 0 or data.get('iRet') != 0:
+                error_msg = data.get('sMsg', '未知错误')
+                return {
+                    'success': False,
+                    'error': f"API错误: {error_msg}"
+                }
+
+            # 提取数据 - 严格按照a.py的数据结构
+            jdata = data.get('jData', {})
+            secret_data = jdata.get('data', {})
+
+            # 按照a.py的方式检查数据状态 - 检查secret_data.code
+            if secret_data.get('code') != 0:
+                error_msg = secret_data.get('msg', '数据获取失败')
+                return {
+                    'success': False,
+                    'error': f"数据错误: {error_msg}"
+                }
+
+            # 获取密码数据 - 按照a.py的结构: secret_data.data.list
+            secret_list = secret_data.get('data', {}).get('list', [])
+            if not secret_list:
+                return {
+                    'success': False,
+                    'error': '没有找到每日密码数据'
+                }
+
+            # 格式化密码数据 - 严格按照a.py的字段名
+            formatted_secrets = []
+            for item in secret_list:
+                # 按照a.py中验证过的字段名
+                map_id = item.get('mapID', '')
+                map_name = item.get('mapName', '')
+                password = item.get('secret', '')
+
+                formatted_secrets.append({
+                    'map_id': map_id,
+                    'map_name': map_name,
+                    'secret': password
+                })
+
+            return {
+                'success': True,
+                'data': {
+                    'secrets': formatted_secrets,
+                    'query_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }
+            }
+
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"每日密码查询过程错误: {str(e)}"
+            }
+
+    def build_special_duty_request_params(self):
+        """构建特勤处状态API请求参数 - 严格按照API文档"""
+        params = {
+            'iChartId': '365589',
+            'iSubChartId': '365589',
+            'sIdeToken': 'bQaMCQ',
+            'source': '2'
+        }
+
+
+class QueryThread(QThread):
+    """查询线程，用于在后台执行API请求"""
+    finished = Signal(dict)
+    error = Signal(str)
+
+    def __init__(self, openid, access_token, query_type="fhzd"):
+        super().__init__()
+        self.openid = openid
+        self.access_token = access_token
+        self.query_type = query_type
+        self.query_manager = DataQueryManager(openid, access_token)
+
+    def run(self):
+        try:
+            if self.query_type == "daily_secret":
+                result = self.query_manager.query_daily_secret_data()
+            elif self.query_type == "fhzd":
+                result = self.query_manager.query_fhzd_data()
+            elif self.query_type == "battle":
+                result = self.query_manager.query_battle_data()
+            elif self.query_type == "weekly":
+                result = self.query_manager.query_weekly_data()
+            elif self.query_type == "sol_weekly":
+                result = self.query_manager.query_sol_weekly_data()
+            elif self.query_type == "currency":
+                result = self.query_manager.query_all_currency_data()
+            else:
+                raise ValueError(f"未知的查询类型: {self.query_type}")
+
+            if result['success']:
+                self.finished.emit(result)
+            else:
+                self.error.emit(result['error'])
+
+        except Exception as e:
+            self.error.emit(f"查询过程错误: {str(e)}")
+
+
+class FHZDQueryTool(QMainWindow):
+    """烽火地带查询工具主窗口"""
+
+    def __init__(self):
+        super().__init__()
+
+        # 身份验证参数
+        self.openid = "332908108AE3BCD62DCE9843072E00FE"
+        self.access_token = "CD7193582B50A3284DEE0B15749FEF23"
+
+        # 查询管理器和状态变量
+        self.query_manager = DataQueryManager(self.openid, self.access_token)
+        self.last_query_time = None
+        self.query_count = 0
+        self.is_querying = False
+        self.current_query_type = "daily_secret"  # 默认查询类型：daily_secret=每日密码，fhzd=烽火地带，battle=战场日报
+
+        # 查询间隔控制（最小5秒）
+        self.min_query_interval = 5000  # 5秒
+        self.last_query_timestamp = None
+
+        self.init_ui()
+
+    def init_ui(self):
+        """初始化用户界面"""
+        self.setWindowTitle("烽火地带收益查询工具")
+        self.setFixedSize(600, 400)
+
+        # 创建中央部件
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        # 主布局
+        main_layout = QVBoxLayout(central_widget)
+
+        # 标题
+        title_label = QLabel("烽火地带数据查询工具")
+        title_font = QFont()
+        title_font.setPointSize(16)
+        title_font.setBold(True)
+        title_label.setFont(title_font)
+        title_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title_label)
+
+        # 查询类型选择
+        query_type_layout = QHBoxLayout()
+        query_type_layout.addWidget(QLabel("查询类型:"))
+
+        self.daily_secret_radio = QPushButton("每日密码")
+        self.daily_secret_radio.setCheckable(True)
+        self.daily_secret_radio.setChecked(True)
+        self.daily_secret_radio.clicked.connect(lambda: self.set_query_type("daily_secret"))
+
+        self.fhzd_radio = QPushButton("烽火地带收益")
+        self.fhzd_radio.setCheckable(True)
+        self.fhzd_radio.clicked.connect(lambda: self.set_query_type("fhzd"))
+
+        self.battle_radio = QPushButton("战场日报统计")
+        self.battle_radio.setCheckable(True)
+        self.battle_radio.clicked.connect(lambda: self.set_query_type("battle"))
+
+        self.weekly_radio = QPushButton("战场周报统计")
+        self.weekly_radio.setCheckable(True)
+        self.weekly_radio.clicked.connect(lambda: self.set_query_type("weekly"))
+
+        self.sol_weekly_radio = QPushButton("烽火周报统计")
+        self.sol_weekly_radio.setCheckable(True)
+        self.sol_weekly_radio.clicked.connect(lambda: self.set_query_type("sol_weekly"))
+
+        self.currency_radio = QPushButton("货币资产查询")
+        self.currency_radio.setCheckable(True)
+        self.currency_radio.clicked.connect(lambda: self.set_query_type("currency"))
+
+        query_type_layout.addWidget(self.daily_secret_radio)
+        query_type_layout.addWidget(self.fhzd_radio)
+        query_type_layout.addWidget(self.battle_radio)
+        query_type_layout.addWidget(self.weekly_radio)
+        query_type_layout.addWidget(self.sol_weekly_radio)
+        query_type_layout.addWidget(self.currency_radio)
+        query_type_layout.addStretch()
+
+        # 设置按钮样式
+        radio_style = """
+            QPushButton {
+                background-color: #e0e0e0;
+                border: 1px solid #ccc;
+                padding: 6px 12px;
+                border-radius: 4px;
+            }
+            QPushButton:checked {
+                background-color: #4CAF50;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #d0d0d0;
+            }
+        """
+        self.daily_secret_radio.setStyleSheet(radio_style)
+        self.fhzd_radio.setStyleSheet(radio_style)
+        self.battle_radio.setStyleSheet(radio_style)
+        self.weekly_radio.setStyleSheet(radio_style)
+        self.sol_weekly_radio.setStyleSheet(radio_style)
+        self.currency_radio.setStyleSheet(radio_style)
+
+        main_layout.addLayout(query_type_layout)
+
+        # 状态信息
+        self.status_label = QLabel("准备就绪")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.status_label)
+
+        # 进度条
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        main_layout.addWidget(self.progress_bar)
+
+        # 结果文本显示区域
+        self.result_text = QLabel("暂无数据")
+        self.result_text.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.result_text.setWordWrap(True)
+        self.result_text.setStyleSheet(
+            "border: 1px solid #ccc; padding: 10px; background-color: #f9f9f9; min-height: 120px;")
+        main_layout.addWidget(self.result_text)
+
+        # 按钮布局
+        button_layout = QHBoxLayout()
+
+        # 查询按钮
+        self.query_button = QPushButton("查询数据")
+        self.query_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        self.query_button.clicked.connect(self.query_data)
+        button_layout.addWidget(self.query_button)
+
+        # 清空按钮
+        self.clear_button = QPushButton("清空结果")
+        self.clear_button.clicked.connect(self.clear_results)
+        button_layout.addWidget(self.clear_button)
+
+        main_layout.addLayout(button_layout)
+
+        # 身份验证信息显示
+        auth_label = QLabel(f"OpenID: {self.openid[:8]}... | AccessToken: {self.access_token[:8]}...")
+        auth_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(auth_label)
+
+    def query_data(self):
+        """查询数据"""
+        # 检查是否正在查询
+        if self.is_querying:
+            QMessageBox.information(self, "提示", "正在查询中，请稍候...")
+            return
+
+        # 检查查询间隔
+        current_time = datetime.now()
+        if self.last_query_timestamp:
+            time_diff = (current_time - self.last_query_timestamp).total_seconds() * 1000
+            if time_diff < self.min_query_interval:
+                remaining_time = int((self.min_query_interval - time_diff) / 1000)
+                QMessageBox.information(self, "提示", f"请等待 {remaining_time} 秒后再查询")
+                return
+
+        # 设置查询状态
+        self.is_querying = True
+        self.query_button.setEnabled(False)
+        self.query_button.setText("查询中...")
+        self.progress_bar.setVisible(True)
+        self.status_label.setText("正在查询数据，请稍候...")
+
+        # 更新查询计数
+        self.query_count += 1
+        self.last_query_timestamp = current_time
+
+        # 创建查询线程
+        self.query_thread = QueryThread(self.openid, self.access_token, self.current_query_type)
+        self.query_thread.finished.connect(self.on_query_success)
+        self.query_thread.error.connect(self.on_query_error)
+        self.query_thread.start()
+
+    def set_query_type(self, query_type):
+        """设置查询类型"""
+        self.current_query_type = query_type
+
+        # 更新按钮状态
+        self.daily_secret_radio.setChecked(query_type == "daily_secret")
+        self.fhzd_radio.setChecked(query_type == "fhzd")
+        self.battle_radio.setChecked(query_type == "battle")
+        self.weekly_radio.setChecked(query_type == "weekly")
+        self.sol_weekly_radio.setChecked(query_type == "sol_weekly")
+        self.currency_radio.setChecked(query_type == "currency")
+
+        # 清空结果显示
+        self.result_text.setText("暂无数据")
+
+        # 更新状态信息
+        if query_type == "daily_secret":
+            self.status_label.setText("已切换到每日密码查询")
+        elif query_type == "fhzd":
+            self.status_label.setText("已切换到烽火地带收益查询")
+        elif query_type == "battle":
+            self.status_label.setText("已切换到战场日报统计查询")
+        elif query_type == "weekly":
+            self.status_label.setText("已切换到战场周报统计查询")
+        elif query_type == "sol_weekly":
+            self.status_label.setText("已切换到烽火周报统计查询")
+        elif query_type == "currency":
+            self.status_label.setText("已切换到货币资产查询")
+        else:
+            self.status_label.setText("已切换到每日密码查询")
+
+    def on_query_success(self, result):
+        """查询成功回调"""
+        # 重置查询状态
+        self.is_querying = False
+        self.query_button.setEnabled(True)
+        self.query_button.setText("查询数据")
+        self.progress_bar.setVisible(False)
+
+        try:
+            if self.current_query_type == "daily_secret":
+                self._display_daily_secret_data(result)
+            elif self.current_query_type == "fhzd":
+                self._display_fhzd_data(result)
+            elif self.current_query_type == "battle":
+                self._display_battle_data(result)
+            elif self.current_query_type == "weekly":
+                self._display_weekly_data(result)
+            elif self.current_query_type == "sol_weekly":
+                self._display_sol_weekly_data(result)
+            elif self.current_query_type == "currency":
+                self._display_currency_data(result)
+
+            # 添加查询时间记录
+            self.last_query_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        except Exception as e:
+            self.status_label.setText(f"数据展示错误: {str(e)}")
+            QMessageBox.warning(self, "错误", f"数据展示错误: {str(e)}")
+
+    def _display_fhzd_data(self, result):
+        """显示烽火地带数据"""
+        # 显示基本信息
+        recent_gain = result.get('recent_gain', 0)
+        recent_date = result.get('recent_gain_date', '未知')
+        collection_date = result.get('collection_date', '未知')
+        current_time = result.get('current_time', '未知')
+
+        # 格式化显示信息
+        status_text = (
+            f"查询成功 - 昨日收益: {recent_gain:,} | "
+            f"收益日期: {recent_date} | "
+            f"数据日期: {collection_date} | "
+            f"查询次数: {self.query_count}"
+        )
+        self.status_label.setText(status_text)
+
+        # 显示top3物品（文本形式）
+        items_list = result.get('items_list', [])
+
+        if items_list:
+            result_text_lines = ["烽火地带昨日收益Top3物品："]
+            for item in items_list:
+                result_text_lines.append(
+                    f"第{item['rank']}名: 物品ID {item['object_id']} - 数量 {item['count']} - 价值 {item['formatted_price']}")
+
+            result_text = "\n".join(result_text_lines)
+        else:
+            result_text = "未找到相关数据"
+
+        self.result_text.setText(result_text)
+
+    def _display_battle_data(self, result):
+        """显示战场日报数据"""
+        # 显示基本信息
+        total_kill_num = result.get('total_kill_num', 0)
+        total_win_num = result.get('total_win_num', 0)
+        total_fight_num = result.get('total_fight_num', 0)
+        total_score = result.get('total_score', 0)
+        recent_date = result.get('recent_date', '未知')
+        current_time = result.get('current_time', '未知')
+
+        # 格式化显示信息
+        status_text = (
+            f"查询成功 - 总击杀: {total_kill_num:,} | "
+            f"总胜局: {total_win_num:,} | "
+            f"总局数: {total_fight_num:,} | "
+            f"查询次数: {self.query_count}"
+        )
+        self.status_label.setText(status_text)
+
+        # 格式化战场数据
+        formatted_data = self.query_manager.format_battle_data(result)
+        self.result_text.setText(formatted_data)
+
+    def _display_weekly_data(self, result):
+        """显示战场周报数据"""
+        # 显示基本信息
+        total_num = result.get('total_num', '0')
+        win_num = result.get('win_num', '0')
+        kill_num = result.get('kill_num', '0')
+        total_score = result.get('total_score', '0')
+        rank_match_score = result.get('rank_match_score', '0')
+
+        # 格式化显示信息
+        status_text = (
+            f"查询成功 - 总局数: {total_num} | "
+            f"胜场: {win_num} | "
+            f"总击杀: {kill_num} | "
+            f"查询次数: {self.query_count}"
+        )
+        self.status_label.setText(status_text)
+
+        # 格式化周报数据
+        formatted_data = self.query_manager.format_weekly_data(result)
+        self.result_text.setText(formatted_data)
+
+    def _display_sol_weekly_data(self, result):
+        """显示烽火周报数据"""
+        # 显示基本信息
+        total_sol_num = result.get('total_sol_num', '0')
+        total_exacuation_num = result.get('total_exacuation_num', '0')
+        gained_price = result.get('gained_price', '0')
+        rise_price = result.get('rise_price', '0')
+
+        # 格式化显示信息
+        status_text = (
+            f"查询成功 - 本周对局数: {total_sol_num} | "
+            f"撤离成功数: {total_exacuation_num} | "
+            f"总利润: {rise_price} | "
+            f"查询次数: {self.query_count}"
+        )
+        self.status_label.setText(status_text)
+
+        # 格式化烽火周报数据
+        formatted_data = self.query_manager.format_sol_weekly_data(result)
+        self.result_text.setText(formatted_data)
+
+    def _display_daily_secret_data(self, result):
+        """显示每日密码数据"""
+        formatted_lines = []
+
+        try:
+            formatted_lines.append("=== 每日密码 ===")
+            formatted_lines.append("")
+
+            secrets_data = result.get('data', {})
+            secrets = secrets_data.get('secrets', [])
+
+            if not secrets:
+                formatted_lines.append("今日暂无密码数据")
+            else:
+                # 显示重试信息（如果适用）
+                attempt = secrets_data.get('attempt', 1)
+                if attempt > 1:
+                    formatted_lines.append(f"⚠️ 第{attempt}次尝试获取成功")
+                    formatted_lines.append("")
+
+                for secret_info in secrets:
+                    map_name = secret_info.get('map_name', '')
+                    map_id = secret_info.get('map_id', '')
+                    secret = secret_info.get('secret', '')
+
+                    formatted_lines.append(f"📍 {map_name} (ID: {map_id})")
+                    formatted_lines.append(f"🔐 密码: {secret}")
+                    formatted_lines.append("")
+
+            # 添加查询时间
+            query_time = secrets_data.get('query_time', '')
+            if query_time:
+                formatted_lines.append(f"📊 查询时间: {query_time}")
+            else:
+                formatted_lines.append(f"📊 查询时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except Exception as e:
+            formatted_lines = ["每日密码数据显示错误"]
+            formatted_lines.append(f"错误详情: {str(e)}")
+
+        # 显示结果
+        result_text = "\n".join(formatted_lines)
+        self.result_text.setText(result_text)
+
+        # 更新状态信息
+        attempt = secrets_data.get('attempt', 1) if result.get('success') else 0
+        if attempt > 1:
+            self.status_label.setText(f"每日密码查询完成 (第{attempt}次尝试)")
+        else:
+            self.status_label.setText("每日密码查询完成")
+
+    def _display_currency_data(self, result):
+        """显示货币资产数据"""
+        formatted_lines = []
+
+        try:
+            formatted_lines.append("=== 货币资产统计 ===")
+            formatted_lines.append("")
+
+            currency_data = result.get('data', {})
+
+            if 'hafu' in currency_data:
+                hafu_data = currency_data['hafu']
+                amount = hafu_data.get('amount', '0')
+                try:
+                    amount_int = int(amount)
+                    formatted_lines.append(f"哈夫币: {amount_int:,}")
+                except ValueError:
+                    formatted_lines.append(f"哈夫币: {amount}")
+            else:
+                formatted_lines.append("哈夫币: 查询失败")
+
+            if 'triangle_ticket' in currency_data:
+                ticket_data = currency_data['triangle_ticket']
+                amount = ticket_data.get('amount', '0')
+                try:
+                    amount_int = int(amount)
+                    formatted_lines.append(f"三角券: {amount_int:,}")
+                except ValueError:
+                    formatted_lines.append(f"三角券: {amount}")
+            else:
+                formatted_lines.append("三角券: 查询失败")
+
+            if 'triangle_coin' in currency_data:
+                coin_data = currency_data['triangle_coin']
+                amount = coin_data.get('amount', '0')
+                try:
+                    amount_int = int(amount)
+                    formatted_lines.append(f"三角币: {amount_int:,}")
+                except ValueError:
+                    formatted_lines.append(f"三角币: {amount}")
+            else:
+                formatted_lines.append("三角币: 查询失败")
+
+            errors = result.get('errors')
+            if errors:
+                formatted_lines.append("")
+                formatted_lines.append("部分查询警告:")
+                for error in errors:
+                    formatted_lines.append(f"   - {error}")
+
+            formatted_lines.append("")
+            formatted_lines.append(f"查询时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except Exception as e:
+            formatted_lines = ["货币数据显示错误"]
+            formatted_lines.append(f"错误详情: {str(e)}")
+
+        # 显示结果
+        result_text = "\n".join(formatted_lines)
+        self.result_text.setText(result_text)
+        self.status_label.setText("货币资产查询完成")
+
+    def on_query_error(self, error_msg):
+        """查询错误回调"""
+        # 重置查询状态
+        self.is_querying = False
+        self.query_button.setEnabled(True)
+        self.query_button.setText("查询数据")
+        self.progress_bar.setVisible(False)
+
+        # 显示错误信息
+        self.status_label.setText(f"查询失败: {error_msg}")
+        QMessageBox.warning(self, "错误", error_msg)
+
+    def clear_results(self):
+        """清空结果"""
+        self.result_text.setText("暂无数据")
+        if self.last_query_time:
+            self.status_label.setText(f"结果已清空 - 上次查询: {self.last_query_time}")
+        else:
+            self.status_label.setText("结果已清空")
+
+    def test_connection(self):
+        """测试连接功能"""
+        try:
+            # 验证身份验证参数
+            self.query_manager.validate_auth_params()
+            return True, "身份验证参数验证成功"
+        except Exception as e:
+            return False, f"参数验证失败: {str(e)}"
+
+
+def main():
+    app = QApplication(sys.argv)
+
+    # 设置应用程序样式
+    app.setStyle('Fusion')
+
+    window = FHZDQueryTool()
+    window.show()
+
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

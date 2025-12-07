@@ -1,0 +1,614 @@
+Date/Time:       2025-12-04 19:07:01 
+Command line:    C:\Users\xiyih\AppData\Local\Programs\Python\Python310\Scripts\briefcase package android
+
+OS Release:      Windows 10
+OS Version:      10.0.28000
+Architecture:    AMD64
+Platform:        Windows-10-10.0.28000-SP0
+
+Python exe:      C:\Users\xiyih\AppData\Local\Programs\Python\Python310\python.exe
+Python version:  3.10.4 (tags/v3.10.4:9d38120, Mar 23 2022, 23:13:41) [MSC v.1929 64 bit (AMD64)]
+Virtual env:     False
+Conda env:       False
+
+Briefcase:       0.3.25
+Target platform: android
+Target format:   gradle
+
+Environment Variables:
+	123PAN=D:\xiyih\123\123pan\123pan.exe
+	ADB=C:\platform-tools
+	ALLUSERSPROFILE=C:\ProgramData
+	ANDROID_HOME=C:\Program Files (x86)\Android\android-sdk
+	APPDATA=C:\Users\xiyih\AppData\Roaming
+	COMMONPROGRAMFILES=C:\Program Files\Common Files
+	COMMONPROGRAMFILES(X86)=C:\Program Files (x86)\Common Files
+	COMMONPROGRAMW6432=C:\Program Files\Common Files
+	COMPUTERNAME=XYH360
+	COMSPEC=C:\WINDOWS\system32\cmd.exe
+	CURO_HOME=E/curl
+	DRIVERDATA=C:\Windows\System32\Drivers\DriverData
+	EFC_13664_1262719628=1
+	EFC_13664_1592913036=1
+	EFC_13664_2283032206=1
+	EFC_13664_3789132940=1
+	FPS_BROWSER_APP_PROFILE_STRING=Internet Explorer
+	FPS_BROWSER_USER_PROFILE_STRING=Default
+	HOMEDRIVE=C:
+	HOMEPATH=\Users\xiyih
+	IDEA_INITIAL_DIRECTORY=D:\PyCharm 2021.1\bin
+	JAVA_HOME=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\java17
+	LEVEL_ZERO_V1_SDK_PATH=C:\Program Files\LevelZeroSDK\1.24.0\
+	LOCALAPPDATA=C:\Users\xiyih\AppData\Local
+	LOGONSERVER=\\XYH360
+	NUMBER_OF_PROCESSORS=20
+	ONEDRIVE=C:\Users\xiyih\OneDrive
+	ONEDRIVECONSUMER=C:\Users\xiyih\OneDrive
+	OS=Windows_NT
+	PATH=D:\xiyih\VMWARE\bin\;C:\Program Files (x86)\Common Files\Oracle\Java\java8path;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;D:\ffmpeg-7.1.1-essentials_build\bin\;"C:\WINDOWS;C:\WINDOWS\System32\Wbem";C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\Git\cmd;C:\platform-tools;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files (x86)\Hyenae;C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\java17\bin;C:\Users\xiyih\AppData\Local\pnpm;C:\Users\xiyih\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\xiyih\AppData\Local\Programs\Python\Python310\;C:\Users\xiyih\AppData\Local\Microsoft\WindowsApps;D:\ffmpeg-7.1.1-essentials_build\bin\;"C:\WINDOWS;C:\WINDOWS\system32;C:\WINDOWS\System32\Wbem";D:\xiyih\CodeBuddy CN\bin;C:\Program Files (x86)\Android\android-sdk\tools;C:\Program Files (x86)\Android\android-sdk\platform-tools;
+	PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+	PNPM_HOME=C:\Users\xiyih\AppData\Local\pnpm
+	PROCESSOR_ARCHITECTURE=AMD64
+	PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 154 Stepping 3, GenuineIntel
+	PROCESSOR_LEVEL=6
+	PROCESSOR_REVISION=9a03
+	PROGRAMDATA=C:\ProgramData
+	PROGRAMFILES=C:\Program Files
+	PROGRAMFILES(X86)=C:\Program Files (x86)
+	PROGRAMW6432=C:\Program Files
+	PROMPT=$P$G
+	PSMODULEPATH=C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+	PUBLIC=C:\Users\Public
+	SESSIONNAME=Console
+	SYSTEMDRIVE=C:
+	SYSTEMROOT=C:\WINDOWS
+	TEMP=C:\Users\xiyih\AppData\Local\Temp
+	TERMINAL_EMULATOR=JetBrains-JediTerm
+	TERM_SESSION_ID=a0171031-cde8-49cc-ab4a-d9363077517f
+	TMP=C:\Users\xiyih\AppData\Local\Temp
+	USERDOMAIN=XYH360
+	USERDOMAIN_ROAMINGPROFILE=XYH360
+	USERNAME=xiyih
+	USERPROFILE=C:\Users\xiyih
+	WINDIR=C:\WINDOWS
+	ZES_ENABLE_SYSMAN=1
+	__INTELLIJ_COMMAND_HISTFILE__=C:\Users\xiyih\AppData\Local\JetBrains\PyCharm2021.1\terminal\history\dftoga-history
+
+pyproject.toml:
+# This project was generated with 0.3.25 using template: https://github.com/beeware/briefcase-template @ v0.3.25
+[build-system]
+requires = ["briefcase>=0.3.25", "setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.briefcase]
+project_name = "dftool(toga)"
+bundle = "com.dfm.query"
+version = "0.0.1"
+url = "https://example.com/dftool"
+license.file = "LICENSE"
+author = "Jane Developer"
+author_email = "jane@example.com"
+description = "DFM游戏数据查询工具 - 支持Windows/Android双平台"
+long_description = """DFM Query Tool
+一款基于 Toga 框架开发的跨平台游戏数据查询应用，核心功能：
+1. 每日地图密码查询（多地图支持）
+2. 烽火地带/全面战场数据统计（击杀、胜率、收益）
+3. 战场周报/烽火周报生成（周度数据汇总）
+4. 特勤处设施状态监控（生产进度、物品信息）
+5. 多类型货币资产查询（哈夫币、三角券、三角币）
+适配 Windows 10+ 及 Android 8.0+ 系统，自动保存用户配置，优化中文显示体验。
+"""
+
+[tool.briefcase.app.dftool]
+formal_name = "DFMQueryTool"
+display_name = "DFM查询工具"
+description = "DFM游戏数据查询工具"
+long_description = """DFM Query Tool
+功能清单：
+- 用户配置管理：保存OpenID/Access Token，无需重复输入
+- 每日密码：实时获取零号大坝、长弓溪谷等地图密码
+- 烽火地带：收益Top3物品统计、昨日总收益计算
+- 全面战场：高光对局分析、胜率/击杀率等核心数据
+- 周报应：自动计算周度战斗数据、干员使用情况
+- 特勤处：设施生产状态、物品等级/价格查询
+- 货币资产：多类型货币实时统计、资产状态评估
+"""
+sources = [
+    "src/dftool",
+]
+test_sources = [
+    "tests",
+]
+requires = [
+    "requests~=2.31.0",
+    "configparser~=5.3.0"
+]
+test_requires = [
+    "pytest",
+]
+
+# ------------------------------ Windows 平台专属配置 ------------------------------
+[tool.briefcase.app.dftool.windows]
+requires = [
+    "toga-winforms~=0.5.0",
+    "pywin32>=227",
+    "pycairo>=1.23.0"
+]
+wix_config = { "Codepage" = "65001", "Language" = "2052" }
+window_size = [700, 650]
+# Windows 图标（可选，无则注释）
+# icon = "src/dftool/resources/windows/icon.ico"
+
+# ------------------------------ Android 平台专属配置（修复语法错误） ------------------------------
+[tool.briefcase.app.dftool.android]
+requires = [
+    "toga-android~=0.5.0",
+    "requests~=2.31.0"
+]
+base_theme = "Theme.MaterialComponents.Light.DarkActionBar"
+# Android 构建依赖（支持UI交互、兼容性）
+build_gradle_dependencies = [
+    "com.google.android.material:material:1.12.0",
+    "androidx.core:core-ktx:1.12.0",
+    "androidx.appcompat:appcompat:1.6.1"
+]
+# 应用权限（确保功能正常运行）
+permissions = [
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_NETWORK_STATE",
+
+]
+# 关键：删除无效的 min_sdk_version/target_sdk_version（Briefcase 自动管理 SDK 版本）
+# 无自定义图标，注释 icon 配置（使用 Toga 默认图标）
+# icon = "src/dftool/resources/android/icon"
+# 无启动页，注释 splash_screen 配置
+# splash_screen = "src/dftool/resources/android/splash"
+
+# ------------------------------ 其他平台配置（按需保留/删除） ------------------------------
+[tool.briefcase.app.dftool.macOS]
+universal_build = true
+requires = [
+    "toga-cocoa~=0.5.0",
+    "std-nslog~=1.0.3",
+]
+
+[tool.briefcase.app.dftool.linux]
+requires = [
+    "toga-gtk~=0.5.0",
+    "pygobject < 3.52.1",
+    "pycairo>=1.23.0",
+]
+[tool.briefcase.app.dftool.linux.system.debian]
+system_requires = ["libcairo2-dev", "libgirepository1.0-dev"]
+system_runtime_requires = ["gir1.2-gtk-3.0", "libgirepository-1.0-1"]
+
+[tool.briefcase.app.dftool.iOS]
+requires = [
+    "toga-iOS~=0.5.0",
+    "std-nslog~=1.0.3",
+]
+
+[tool.briefcase.app.dftool.web]
+requires = ["toga-web~=0.5.0"]
+style_framework = "Shoelace v2.3"
+
+Briefcase Log:
+[18:50:25]                                                                                                                                                               java.py:111
+           [Java JDK] Evaluating JAVA_HOME...                                                                                                                            java.py:111
+           JAVA_HOME=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\java17                                                                                   java.py:112
+                                                                                                                                                                   subprocess.py:838
+           >>> Running Command:                                                                                                                                    subprocess.py:838
+           >>>     'C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\java17\bin\javac' -version                                                          subprocess.py:838
+           >>> Working Directory:                                                                                                                                  subprocess.py:838
+           >>>     C:\Users\xiyih\CodeBuddy\dftoga\dftool                                                                                                          subprocess.py:838
+           >>> Command Output:                                                                                                                                     subprocess.py:838
+           >>>     javac 17.0.15                                                                                                                                   subprocess.py:838
+           >>> Return code: 0                                                                                                                                      subprocess.py:838
+                                                                                                                                                                   subprocess.py:838
+           Using JDK at C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\java17                                                                                java.py:259
+                                                                                                                                                                  android_sdk.py:270
+           [Android SDK] Evaluating ANDROID_HOME...                                                                                                               android_sdk.py:270
+           ANDROID_HOME=C:\Program Files (x86)\Android\android-sdk                                                                                                android_sdk.py:271
+                                                                                                                                                                  android_sdk.py:320
+           *************************************************************************                                                                              android_sdk.py:320
+           ** WARNING: ANDROID_HOME does not point to an Android SDK              **                                                                              android_sdk.py:320
+           *************************************************************************                                                                              android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+               The location pointed to by the ANDROID_HOME environment                                                                                            android_sdk.py:320
+               variable:                                                                                                                                          android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+               C:\Program Files (x86)\Android\android-sdk                                                                                                         android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+               doesn't appear to contain an Android SDK with the Command-line Tools installed.                                                                    android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+               If ANDROID_HOME is an Android SDK, ensure it is the root directory                                                                                 android_sdk.py:320
+               of the Android SDK instance such that                                                                                                              android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+               $ANDROID_HOME\cmdline-tools\19.0\bin\sdkmanager.bat                                                                                                android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+               is a valid filepath.                                                                                                                               android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+               Briefcase will proceed using its own SDK instance.                                                                                                 android_sdk.py:320
+                                                                                                                                                                  android_sdk.py:320
+           *************************************************************************                                                                              android_sdk.py:320
+           Using Android SDK at C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\android_sdk                                                            android_sdk.py:375
+                                                                                                                                                                       gradle.py:540
+           [dftool] Building Android App Bundle and APK in release mode...                                                                                             gradle.py:540
+           Bundling... started                                                                                                                                         gradle.py:544
+           Android emulator is already installed.                                                                                                                 android_sdk.py:650
+                                                                                                                                                                   subprocess.py:838
+           >>> Running Command:                                                                                                                                    subprocess.py:838
+           >>>     'C:\Users\xiyih\CodeBuddy\dftoga\dftool\build\dftool\android\gradle\gradlew.bat' --console plain bundleRelease                                  subprocess.py:838
+           >>> Working Directory:                                                                                                                                  subprocess.py:838
+           >>>     C:\Users\xiyih\CodeBuddy\dftoga\dftool\build\dftool\android\gradle                                                                              subprocess.py:838
+           >>> Environment Overrides:                                                                                                                              subprocess.py:838
+           >>>     ANDROID_HOME=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\android_sdk                                                             subprocess.py:838
+           >>>     ANDROID_SDK_ROOT=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\android_sdk                                                         subprocess.py:838
+           >>>     JAVA_HOME=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\java17                                                                     subprocess.py:838
+[18:50:29] > Task :app:preBuild UP-TO-DATE                                                                                                                         subprocess.py:195
+           > Task :app:preReleaseBuild UP-TO-DATE                                                                                                                  subprocess.py:195
+           > Task :app:generateReleaseResValues                                                                                                                    subprocess.py:195
+           > Task :app:mapReleaseSourceSetPaths                                                                                                                    subprocess.py:195
+           > Task :app:generateReleaseResources                                                                                                                    subprocess.py:195
+[18:50:31] > Task :app:createReleaseCompatibleScreenManifests                                                                                                      subprocess.py:195
+           > Task :app:extractDeepLinksRelease                                                                                                                     subprocess.py:195
+           > Task :app:processReleaseMainManifest                                                                                                                  subprocess.py:195
+           > Task :app:processReleaseManifest                                                                                                                      subprocess.py:195
+           > Task :app:processApplicationManifestReleaseForBundle                                                                                                  subprocess.py:195
+           > Task :app:checkReleaseAarMetadata                                                                                                                     subprocess.py:195
+           > Task :app:packageReleaseResources                                                                                                                     subprocess.py:195
+           > Task :app:parseReleaseLocalResources                                                                                                                  subprocess.py:195
+[18:50:32] > Task :app:mergeReleaseResources                                                                                                                       subprocess.py:195
+           > Task :app:extractReleaseVersionControlInfo                                                                                                            subprocess.py:195
+           > Task :app:checkReleaseDuplicateClasses                                                                                                                subprocess.py:195
+[18:50:34] > Task :app:extractReleasePythonBuildPackages                                                                                                           subprocess.py:195
+[18:50:36]                                                                                                                                                         subprocess.py:195
+           > Task :app:generateReleasePythonRequirements                                                                                                           subprocess.py:195
+           Chaquopy: Installing for arm64-v8a                                                                                                                      subprocess.py:195
+           Looking in indexes: https://pypi.org/simple, https://chaquo.com/pypi-13.1                                                                               subprocess.py:195
+[18:50:38] Collecting requests~=2.31.0                                                                                                                             subprocess.py:195
+             Using cached requests-2.31.0-py3-none-any.whl (62 kB)                                                                                                 subprocess.py:195
+           Collecting configparser~=5.3.0                                                                                                                          subprocess.py:195
+             Using cached configparser-5.3.0-py3-none-any.whl (19 kB)                                                                                              subprocess.py:195
+[18:50:39] Collecting toga-android~=0.5.0                                                                                                                          subprocess.py:195
+             Using cached toga_android-0.5.3-py3-none-any.whl (70 kB)                                                                                              subprocess.py:195
+           Collecting certifi>=2017.4.17                                                                                                                           subprocess.py:195
+             Using cached certifi-2025.11.12-py3-none-any.whl (159 kB)                                                                                             subprocess.py:195
+[18:50:40] Collecting idna<4,>=2.5                                                                                                                                 subprocess.py:195
+             Using cached idna-3.11-py3-none-any.whl (71 kB)                                                                                                       subprocess.py:195
+[18:50:41] Collecting charset-normalizer<4,>=2                                                                                                                     subprocess.py:195
+             Using cached charset_normalizer-3.4.4-py3-none-any.whl (53 kB)                                                                                        subprocess.py:195
+           Collecting urllib3<3,>=1.21.1                                                                                                                           subprocess.py:195
+             Using cached urllib3-2.5.0-py3-none-any.whl (129 kB)                                                                                                  subprocess.py:195
+[18:50:42] Collecting toga-core==0.5.3                                                                                                                             subprocess.py:195
+             Using cached toga_core-0.5.3-py3-none-any.whl (147 kB)                                                                                                subprocess.py:195
+[18:50:43] Collecting travertino==0.5.3                                                                                                                            subprocess.py:195
+             Using cached travertino-0.5.3-py3-none-any.whl (26 kB)                                                                                                subprocess.py:195
+           Installing collected packages: certifi, idna, charset-normalizer, urllib3, requests, configparser, travertino, toga-core, toga-android                  subprocess.py:195
+[18:50:44] Successfully installed certifi-2025.11.12 charset-normalizer-3.4.4 configparser-5.3.0 idna-3.11 requests-2.31.0 toga-android-0.5.3 toga-core-0.5.3      subprocess.py:195
+           travertino-0.5.3 urllib3-2.5.0                                                                                                                                           
+           Chaquopy: Installing for armeabi-v7a                                                                                                                    subprocess.py:195
+           Chaquopy: Installing for x86_64                                                                                                                         subprocess.py:195
+[18:50:46]                                                                                                                                                         subprocess.py:195
+           > Task :app:mergeReleasePythonSources                                                                                                                   subprocess.py:195
+           > Task :app:generateReleasePythonProxies                                                                                                                subprocess.py:195
+           > Task :app:javaPreCompileRelease                                                                                                                       subprocess.py:195
+           > Task :app:mergeReleaseStartupProfile                                                                                                                  subprocess.py:195
+           > Task :app:mergeReleaseShaders                                                                                                                         subprocess.py:195
+           > Task :app:compileReleaseShaders NO-SOURCE                                                                                                             subprocess.py:195
+           > Task :app:generateReleaseAssets UP-TO-DATE                                                                                                            subprocess.py:195
+[18:50:47] > Task :app:desugarReleaseFileDependencies                                                                                                              subprocess.py:195
+[18:50:48] > Task :app:generateReleasePythonMiscAssets                                                                                                             subprocess.py:195
+[18:50:49] > Task :app:generateReleasePythonRequirementsAssets                                                                                                     subprocess.py:195
+           > Task :app:generateReleasePythonSourceAssets                                                                                                           subprocess.py:195
+           > Task :app:generateReleasePythonBuildAssets                                                                                                            subprocess.py:195
+           > Task :app:mergeReleaseAssets                                                                                                                          subprocess.py:195
+           > Task :app:processReleaseJavaRes NO-SOURCE                                                                                                             subprocess.py:195
+[18:50:50] > Task :app:generateReleasePythonJniLibs                                                                                                                subprocess.py:195
+           > Task :app:mergeReleaseJavaResource                                                                                                                    subprocess.py:195
+[18:50:51] > Task :app:mergeReleaseJniLibFolders                                                                                                                   subprocess.py:195
+           > Task :app:writeReleaseAppMetadata                                                                                                                     subprocess.py:195
+           > Task :app:processReleaseManifestForPackage                                                                                                            subprocess.py:195
+           > Task :app:mergeReleaseArtProfile                                                                                                                      subprocess.py:195
+           > Task :app:mergeReleaseNativeLibs                                                                                                                      subprocess.py:195
+[18:50:52] > Task :app:collectReleaseDependencies                                                                                                                  subprocess.py:195
+           > Task :app:configureReleaseDependencies                                                                                                                subprocess.py:195
+           > Task :app:extractProguardFiles                                                                                                                        subprocess.py:195
+           > Task :app:parseReleaseIntegrityConfig                                                                                                                 subprocess.py:195
+                                                                                                                                                                   subprocess.py:195
+           > Task :app:stripReleaseDebugSymbols                                                                                                                    subprocess.py:195
+           Unable to strip the following libraries, packaging them as they are: libchaquopy_java.so, libcrypto_chaquopy.so, libcrypto_python.so, libpython3.10.so, subprocess.py:195
+           libsqlite3_chaquopy.so, libsqlite3_python.so, libssl_chaquopy.so, libssl_python.so. Run with --info option to learn more.                                                
+                                                                                                                                                                   subprocess.py:195
+           > Task :app:extractReleaseNativeSymbolTables                                                                                                            subprocess.py:195
+           > Task :app:mergeExtDexRelease                                                                                                                          subprocess.py:195
+[18:50:53] > Task :app:processReleaseResources                                                                                                                     subprocess.py:195
+[18:50:54] > Task :app:compileReleaseJavaWithJavac                                                                                                                 subprocess.py:195
+[18:50:55] > Task :app:dexBuilderRelease                                                                                                                           subprocess.py:195
+           > Task :app:mergeReleaseGlobalSynthetics                                                                                                                subprocess.py:195
+[18:50:56] > Task :app:bundleReleaseResources                                                                                                                      subprocess.py:195
+[18:50:57] > Task :app:generateReleaseLintVitalReportModel                                                                                                         subprocess.py:195
+[18:50:58] > Task :app:mergeDexRelease                                                                                                                             subprocess.py:195
+[18:51:27] > Task :app:lintVitalAnalyzeRelease                                                                                                                     subprocess.py:195
+[19:06:59] > Task :app:lintVitalAnalyzeRelease FAILED                                                                                                              subprocess.py:195
+                                                                                                                                                                   subprocess.py:195
+           [Incubating] Problems report is available at:                                                                                                           subprocess.py:195
+           file:///C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle/build/reports/problems/problems-report.html                                                   
+                                                                                                                                                                   subprocess.py:195
+           FAILURE: Build failed with an exception.                                                                                                                subprocess.py:195
+                                                                                                                                                                   subprocess.py:195
+           * What went wrong:                                                                                                                                      subprocess.py:195
+           Execution failed for task ':app:lintVitalAnalyzeRelease'.                                                                                               subprocess.py:195
+           > Could not resolve all files for configuration ':app:detachedConfiguration1'.                                                                          subprocess.py:195
+              > Could not download intellij-core-31.11.1.jar (com.android.tools.external.com-intellij:intellij-core:31.11.1)                                       subprocess.py:195
+                 > Could not get resource                                                                                                                          subprocess.py:195
+           'https://dl.google.com/dl/android/maven2/com/android/tools/external/com-intellij/intellij-core/31.11.1/intellij-core-31.11.1.jar'.                                       
+                    > Read timed out                                                                                                                               subprocess.py:195
+              > Could not download kotlin-compiler-31.11.1.jar (com.android.tools.external.com-intellij:kotlin-compiler:31.11.1)                                   subprocess.py:195
+                 > Could not get resource                                                                                                                          subprocess.py:195
+           'https://dl.google.com/dl/android/maven2/com/android/tools/external/com-intellij/kotlin-compiler/31.11.1/kotlin-compiler-31.11.1.jar'.                                   
+                    > Read timed out                                                                                                                               subprocess.py:195
+                                                                                                                                                                   subprocess.py:195
+           * Try:                                                                                                                                                  subprocess.py:195
+           > Run with --stacktrace option to get the stack trace.                                                                                                  subprocess.py:195
+           > Run with --info or --debug option to get more log output.                                                                                             subprocess.py:195
+           > Run with --scan to get full insights.                                                                                                                 subprocess.py:195
+           > Get more help at https://help.gradle.org.                                                                                                             subprocess.py:195
+                                                                                                                                                                   subprocess.py:195
+           Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.                                                             subprocess.py:195
+                                                                                                                                                                   subprocess.py:195
+           You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.               subprocess.py:195
+                                                                                                                                                                   subprocess.py:195
+           For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle            subprocess.py:195
+           documentation.                                                                                                                                                           
+                                                                                                                                                                   subprocess.py:195
+           BUILD FAILED in 16m 33s                                                                                                                                 subprocess.py:195
+           49 actionable tasks: 49 executed                                                                                                                        subprocess.py:195
+           >>> Return code: 1                                                                                                                                      subprocess.py:838
+                                                                                                                                                                   subprocess.py:838
+           Bundling... errored                                                                                                                                         gradle.py:544
+                                                                                                                                                                      __main__.py:42
+           Error while building project.                                                                                                                              __main__.py:43
+           Saving log... started                                                                                                                                      console.py:438
+
+Main thread traceback:
+┌─────────────────────────────────────────────────────────────────────── Traceback (most recent call last) ────────────────────────────────────────────────────────────────────────┐
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\platforms\android\gradle.py:552 in package_app                                                │
+│                                                                                                                                                                                  │
+│   549 │   │   │   }[app.packaging_format]                                                                                                                                        │
+│   550 │   │   │                                                                                                                                                                  │
+│   551 │   │   │   try:                                                                                                                                                           │
+│ > 552 │   │   │   │   self.run_gradle(app, [build_type])                                                                                                                         │
+│   553 │   │   │   except subprocess.CalledProcessError as e:                                                                                                                     │
+│   554 │   │   │   │   raise BriefcaseCommandError("Error while building project.") from e                                                                                        │
+│   555                                                                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ┌─────────────────────────────────────────────────── locals ───────────────────────────────────────────────────┐                                                                 │
+│ │                 app = <com.dfm.query.dftool v0.0.1 AppConfig>                                                │                                                                 │
+│ │ build_artefact_path = 'bundle/release/app-release.aab'                                                       │                                                                 │
+│ │          build_type = 'bundleRelease'                                                                        │                                                                 │
+│ │              kwargs = {'adhoc_sign': False, 'identity': None}                                                │                                                                 │
+│ │                self = <briefcase.platforms.android.gradle.GradlePackageCommand object at 0x0000019D51FB3D60> │                                                                 │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                                                                 │
+│                                                                                                                                                                                  │
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\platforms\android\gradle.py:119 in run_gradle                                                 │
+│                                                                                                                                                                                  │
+│   116 │   │   self.tools.android_sdk.verify_emulator()                                                                                                                           │
+│   117 │   │                                                                                                                                                                      │
+│   118 │   │   gradlew = "gradlew.bat" if self.tools.host_os == "Windows" else "gradlew"                                                                                          │
+│ > 119 │   │   self.tools.subprocess.run(                                                                                                                                         │
+│   120 │   │   │   # Windows needs the full path to `gradlew`; macOS & Linux can find it                                                                                          │
+│   121 │   │   │   # via `./gradlew`. For simplicity of implementation, we always provide                                                                                         │
+│   122 │   │   │   # the full path.                                                                                                                                               │
+│                                                                                                                                                                                  │
+│ ┌───────────────────────────────────────────── locals ─────────────────────────────────────────────┐                                                                             │
+│ │     app = <com.dfm.query.dftool v0.0.1 AppConfig>                                                │                                                                             │
+│ │    args = ['bundleRelease']                                                                      │                                                                             │
+│ │ gradlew = 'gradlew.bat'                                                                          │                                                                             │
+│ │    self = <briefcase.platforms.android.gradle.GradlePackageCommand object at 0x0000019D51FB3D60> │                                                                             │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────┘                                                                             │
+│                                                                                                                                                                                  │
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\integrations\subprocess.py:142 in inner                                                       │
+│                                                                                                                                                                                  │
+│   139 │   │   # Run subprocess command with or without console control                                                                                                           │
+│   140 │   │   if remove_dynamic_elements:                                                                                                                                        │
+│   141 │   │   │   with sub.tools.console.release_console_control():                                                                                                              │
+│ > 142 │   │   │   │   return sub_method(sub, args, *wrapped_args, **wrapped_kwargs)                                                                                              │
+│   143 │   │   else:                                                                                                                                                              │
+│   144 │   │   │   return sub_method(sub, args, *wrapped_args, **wrapped_kwargs)                                                                                                  │
+│   145                                                                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ┌───────────────────────────────────────────────────────────────────────────── locals ─────────────────────────────────────────────────────────────────────────────┐             │
+│ │                    args = [WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle/gradlew.bat'), '--console', 'plain', 'bundleRelease'] │             │
+│ │              executable = 'C:\\Users\\xiyih\\CodeBuddy\\dftoga\\dftool\\build\\dftool\\android\\gradle\\gradlew.bat'                                             │             │
+│ │ remove_dynamic_elements = True                                                                                                                                   │             │
+│ │                     sub = <briefcase.integrations.subprocess.Subprocess object at 0x0000019D4F4253C0>                                                            │             │
+│ │            wrapped_args = ()                                                                                                                                     │             │
+│ │          wrapped_kwargs = {                                                                                                                                      │             │
+│ │                           │   'env': {                                                                                                                           │             │
+│ │                           │   │   'ANDROID_HOME': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\android_sdk',                             │             │
+│ │                           │   │   'ANDROID_SDK_ROOT': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\android_sdk',                         │             │
+│ │                           │   │   'JAVA_HOME': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\java17'                                      │             │
+│ │                           │   },                                                                                                                                 │             │
+│ │                           │   'cwd': WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle'),                                          │             │
+│ │                           │   'check': True,                                                                                                                     │             │
+│ │                           │   'encoding': 'CP936'                                                                                                                │             │
+│ │                           }                                                                                                                                      │             │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘             │
+│                                                                                                                                                                                  │
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\integrations\subprocess.py:539 in run                                                         │
+│                                                                                                                                                                                  │
+│   536 │   │   # caller sets stream_output=False, then ensure_console_is_safe() will                                                                                              │
+│   537 │   │   # disable any dynamic console elements while the command runs.                                                                                                     │
+│   538 │   │   if stream_output:                                                                                                                                                  │
+│ > 539 │   │   │   return self._run_and_stream_output(args, filter_func=filter_func, **kwargs)                                                                                    │
+│   540 │   │                                                                                                                                                                      │
+│   541 │   │   # Can't filter non-streamed output.                                                                                                                                │
+│   542 │   │   if filter_func:                                                                                                                                                    │
+│                                                                                                                                                                                  │
+│ ┌──────────────────────────────────────────────────────────────────────── locals ────────────────────────────────────────────────────────────────────────┐                       │
+│ │          args = [WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle/gradlew.bat'), '--console', 'plain', 'bundleRelease'] │                       │
+│ │   filter_func = None                                                                                                                                   │                       │
+│ │        kwargs = {                                                                                                                                      │                       │
+│ │                 │   'env': {                                                                                                                           │                       │
+│ │                 │   │   'ANDROID_HOME': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\android_sdk',                             │                       │
+│ │                 │   │   'ANDROID_SDK_ROOT': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\android_sdk',                         │                       │
+│ │                 │   │   'JAVA_HOME': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\java17'                                      │                       │
+│ │                 │   },                                                                                                                                 │                       │
+│ │                 │   'cwd': WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle'),                                          │                       │
+│ │                 │   'check': True,                                                                                                                     │                       │
+│ │                 │   'encoding': 'CP936'                                                                                                                │                       │
+│ │                 }                                                                                                                                      │                       │
+│ │          self = <briefcase.integrations.subprocess.Subprocess object at 0x0000019D4F4253C0>                                                            │                       │
+│ │ stream_output = True                                                                                                                                   │                       │
+│ └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                       │
+│                                                                                                                                                                                  │
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\integrations\subprocess.py:615 in _run_and_stream_output                                      │
+│                                                                                                                                                                                  │
+│   612 │   │   self._log_return_code(return_code)                                                                                                                                 │
+│   613 │   │                                                                                                                                                                      │
+│   614 │   │   if check and return_code:                                                                                                                                          │
+│ > 615 │   │   │   raise subprocess.CalledProcessError(return_code, args, stderr=stderr)                                                                                          │
+│   616 │   │                                                                                                                                                                      │
+│   617 │   │   return subprocess.CompletedProcess(args, return_code, stderr=stderr)                                                                                               │
+│   618                                                                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ┌─────────────────────────────────────────────────────────────────────── locals ───────────────────────────────────────────────────────────────────────┐                         │
+│ │        args = [WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle/gradlew.bat'), '--console', 'plain', 'bundleRelease'] │                         │
+│ │       check = True                                                                                                                                   │                         │
+│ │ filter_func = None                                                                                                                                   │                         │
+│ │      kwargs = {                                                                                                                                      │                         │
+│ │               │   'env': {                                                                                                                           │                         │
+│ │               │   │   'ANDROID_HOME': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\android_sdk',                             │                         │
+│ │               │   │   'ANDROID_SDK_ROOT': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\android_sdk',                         │                         │
+│ │               │   │   'JAVA_HOME': 'C:\\Users\\xiyih\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\java17'                                      │                         │
+│ │               │   },                                                                                                                                 │                         │
+│ │               │   'cwd': WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle'),                                          │                         │
+│ │               │   'encoding': 'CP936',                                                                                                               │                         │
+│ │               │   'stdout': -1,                                                                                                                      │                         │
+│ │               │   'stderr': -2,                                                                                                                      │                         │
+│ │               │   'bufsize': 1                                                                                                                       │                         │
+│ │               }                                                                                                                                      │                         │
+│ │     process = <Popen: returncode: 1 args: ['C:\\Users\\xiyih\\CodeBuddy\\dftoga\\dftool\\b...>                                                       │                         │
+│ │ return_code = 1                                                                                                                                      │                         │
+│ │        self = <briefcase.integrations.subprocess.Subprocess object at 0x0000019D4F4253C0>                                                            │                         │
+│ │      stderr = None                                                                                                                                   │                         │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                         │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+CalledProcessError: Command '[WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle/gradlew.bat'), '--console', 'plain', 'bundleRelease']' returned non-zero exit status 1.
+
+The above exception was the direct cause of the following exception:
+
+┌─────────────────────────────────────────────────────────────────────── Traceback (most recent call last) ────────────────────────────────────────────────────────────────────────┐
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\__main__.py:27 in main                                                                        │
+│                                                                                                                                                                                  │
+│   24 │   │   │   Path.cwd() / "pyproject.toml",                                                                                                                                  │
+│   25 │   │   │   overrides=overrides,                                                                                                                                            │
+│   26 │   │   )                                                                                                                                                                   │
+│ > 27 │   │   command(**options)                                                                                                                                                  │
+│   28 │   except HelpText as e:                                                                                                                                                   │
+│   29 │   │   console.info()                                                                                                                                                      │
+│   30 │   │   console.info(str(e))                                                                                                                                                │
+│                                                                                                                                                                                  │
+│ ┌──────────────────────────────────────────────── locals ────────────────────────────────────────────────┐                                                                       │
+│ │       command = <briefcase.platforms.android.gradle.GradlePackageCommand object at 0x0000019D51FB3D60> │                                                                       │
+│ │       console = <briefcase.console.Console object at 0x0000019D4F1E4D90>                               │                                                                       │
+│ │             e = BriefcaseCommandError('Error while building project.')                                 │                                                                       │
+│ │ extra_cmdline = []                                                                                     │                                                                       │
+│ │       options = {'update': False, 'packaging_format': 'aab', 'adhoc_sign': False, 'identity': None}    │                                                                       │
+│ │     overrides = {}                                                                                     │                                                                       │
+│ │        result = 200                                                                                    │                                                                       │
+│ └────────────────────────────────────────────────────────────────────────────────────────────────────────┘                                                                       │
+│                                                                                                                                                                                  │
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\commands\package.py:204 in __call__                                                           │
+│                                                                                                                                                                                  │
+│   201 │   │                                                                                                                                                                      │
+│   202 │   │   state = None                                                                                                                                                       │
+│   203 │   │   for _, app_obj in sorted(apps_to_package.items()):                                                                                                                 │
+│ > 204 │   │   │   state = self._package_app(                                                                                                                                     │
+│   205 │   │   │   │   app_obj,                                                                                                                                                   │
+│   206 │   │   │   │   update=update,                                                                                                                                             │
+│   207 │   │   │   │   **full_options(state, options),                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ┌───────────────────────────────────────────────── locals ─────────────────────────────────────────────────┐                                                                     │
+│ │               _ = 'dftool'                                                                               │                                                                     │
+│ │             app = None                                                                                   │                                                                     │
+│ │        app_name = None                                                                                   │                                                                     │
+│ │         app_obj = <com.dfm.query.dftool v0.0.1 AppConfig>                                                │                                                                     │
+│ │ apps_to_package = {'dftool': <com.dfm.query.dftool v0.0.1 AppConfig>}                                    │                                                                     │
+│ │         options = {'packaging_format': 'aab', 'adhoc_sign': False, 'identity': None}                     │                                                                     │
+│ │            self = <briefcase.platforms.android.gradle.GradlePackageCommand object at 0x0000019D51FB3D60> │                                                                     │
+│ │           state = None                                                                                   │                                                                     │
+│ │          update = False                                                                                  │                                                                     │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘                                                                     │
+│                                                                                                                                                                                  │
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\commands\package.py:134 in _package_app                                                       │
+│                                                                                                                                                                                  │
+│   131 │   │   self.clean_dist_folder(app, **options)                                                                                                                             │
+│   132 │   │                                                                                                                                                                      │
+│   133 │   │   # Package the app                                                                                                                                                  │
+│ > 134 │   │   state = self.package_app(app, **full_options(state, options))                                                                                                      │
+│   135 │   │                                                                                                                                                                      │
+│   136 │   │   filename = self.distribution_path(app).relative_to(self.base_path)                                                                                                 │
+│   137 │   │   self.console.info(f"Packaged {filename}", prefix=app.app_name)                                                                                                     │
+│                                                                                                                                                                                  │
+│ ┌──────────────────────────────────────────────────────────────────── locals ────────────────────────────────────────────────────────────────────┐                               │
+│ │              app = <com.dfm.query.dftool v0.0.1 AppConfig>                                                                                     │                               │
+│ │      binary_file = WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle/app/build/outputs/apk/debug/app-debug.apk') │                               │
+│ │          options = {'adhoc_sign': False, 'identity': None}                                                                                     │                               │
+│ │ packaging_format = 'aab'                                                                                                                       │                               │
+│ │             self = <briefcase.platforms.android.gradle.GradlePackageCommand object at 0x0000019D51FB3D60>                                      │                               │
+│ │            state = None                                                                                                                        │                               │
+│ │    template_file = WindowsPath('C:/Users/xiyih/CodeBuddy/dftoga/dftool/build/dftool/android/gradle')                                           │                               │
+│ │           update = False                                                                                                                       │                               │
+│ └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                               │
+│                                                                                                                                                                                  │
+│ C:\Users\xiyih\AppData\Local\Programs\Python\Python310\lib\site-packages\briefcase\platforms\android\gradle.py:554 in package_app                                                │
+│                                                                                                                                                                                  │
+│   551 │   │   │   try:                                                                                                                                                           │
+│   552 │   │   │   │   self.run_gradle(app, [build_type])                                                                                                                         │
+│   553 │   │   │   except subprocess.CalledProcessError as e:                                                                                                                     │
+│ > 554 │   │   │   │   raise BriefcaseCommandError("Error while building project.") from e                                                                                        │
+│   555 │   │                                                                                                                                                                      │
+│   556 │   │   # Move artefact to final location.                                                                                                                                 │
+│   557 │   │   self.tools.shutil.move(                                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ┌─────────────────────────────────────────────────── locals ───────────────────────────────────────────────────┐                                                                 │
+│ │                 app = <com.dfm.query.dftool v0.0.1 AppConfig>                                                │                                                                 │
+│ │ build_artefact_path = 'bundle/release/app-release.aab'                                                       │                                                                 │
+│ │          build_type = 'bundleRelease'                                                                        │                                                                 │
+│ │              kwargs = {'adhoc_sign': False, 'identity': None}                                                │                                                                 │
+│ │                self = <briefcase.platforms.android.gradle.GradlePackageCommand object at 0x0000019D51FB3D60> │                                                                 │
+│ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘                                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+BriefcaseCommandError: Error while building project.
+           Collecting extra information for log... started                                                                                                            console.py:473
+                                                                                                                                                                      console.py:477
+           Extra information:                                                                                                                                         console.py:478
+                                                                                                                                                                   subprocess.py:838
+           >>> Running Command:                                                                                                                                    subprocess.py:838
+           >>>     'C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\android_sdk\cmdline-tools\19.0\bin\sdkmanager.bat' --list_installed                 subprocess.py:838
+           >>> Working Directory:                                                                                                                                  subprocess.py:838
+           >>>     C:\Users\xiyih\CodeBuddy\dftoga\dftool                                                                                                          subprocess.py:838
+           >>> Environment Overrides:                                                                                                                              subprocess.py:838
+           >>>     ANDROID_HOME=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\android_sdk                                                             subprocess.py:838
+           >>>     ANDROID_SDK_ROOT=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\android_sdk                                                         subprocess.py:838
+           >>>     JAVA_HOME=C:\Users\xiyih\AppData\Local\BeeWare\briefcase\Cache\tools\java17                                                                     subprocess.py:838
+[19:07:01] >>> Command Output:                                                                                                                                     subprocess.py:838
+           >>>     Loading package information...                                                                                                                  subprocess.py:838
+           >>>     Loading local repository...                                                                                                                     subprocess.py:838
+           >>>     [=========                              ] 25% Loading local repository...                                                                       subprocess.py:838
+           >>>     [=========                              ] 25% Fetch remote repository...                                                                        subprocess.py:838
+           >>>     [=======================================] 100% Fetch remote repository...                                                                       subprocess.py:838
+           >>>                                                                                                                                                     subprocess.py:838
+           >>>     Installed packages:                                                                                                                             subprocess.py:838
+           >>>       Path                 | Version | Description                | Location                                                                        subprocess.py:838
+           >>>       -------              | ------- | -------                    | -------                                                                         subprocess.py:838
+           >>>       build-tools;35.0.0   | 35.0.0  | Android SDK Build-Tools 35 | build-tools\35.0.0                                                              subprocess.py:838
+           >>>       emulator             | 36.2.12 | Android Emulator           | emulator                                                                        subprocess.py:838
+           >>>       platform-tools       | 36.0.0  | Android SDK Platform-Tools | platform-tools                                                                  subprocess.py:838
+           >>>       platforms;android-35 | 2       | Android SDK Platform 35    | platforms\android-35                                                            subprocess.py:838
+           >>>                                                                                                                                                     subprocess.py:838
+           >>> Return code: 0                                                                                                                                      subprocess.py:838
+                                                                                                                                                                   subprocess.py:838
+           Collecting extra information for log... done                                                                                                               console.py:473
