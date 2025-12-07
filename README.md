@@ -1,7 +1,7 @@
 # DFM游戏数据查询工具代码全解析
 
 帮助文档链接: https://docs.qq.com/document/DS2hWc29pSGVIa3dM
-
+main.py为主文件
 === DFM查询工具使用说明 ===
 
 1. 用户配置：
@@ -1030,5 +1030,6 @@ if __name__ == "__main__":
 ```
 - **应用标识**：`com.dfm.query`为应用唯一标识，用于Toga框架区分不同应用；
 - **主循环**：`app.main_loop()`启动UI事件循环，处理用户点击、输入等交互，确保应用持续运行。
+
 
 
